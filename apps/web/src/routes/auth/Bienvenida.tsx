@@ -77,7 +77,7 @@ export default function Bienvenida() {
                 borderRadius: '8px',
               }}
             >
-              <span style={{ fontSize: '40px' }}>🌉</span>
+              <i className="fa-solid fa-bridge-water" style={{ fontSize: '40px', color: 'var(--color-peach)' }}></i>
             </div>
           </div>
 
@@ -116,7 +116,7 @@ export default function Bienvenida() {
         </Button>
         <Button
           variante="contorno"
-          style={{ width: '100%', color: 'var(--color-orange)' }}
+          style={{ width: '100%' }}
           onClick={() => navigate('/crear-cuenta')}
         >
           Crear cuenta
