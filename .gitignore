@@ -10,3 +10,31 @@ build/
 supabase/.temp/
 .venv/
 .ruff_cache/
+
+# Node/TypeScript/Monorepo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+*.tsbuildinfo
+coverage/
+.turbo/
+
+# Vite/Entornos
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+htmlcov/
+.coverage
+.mypy_cache/
+
+# Windows
+Thumbs.db
+desktop.ini
