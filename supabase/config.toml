@@ -1,0 +1,6 @@
+# Configuración local de Supabase CLI.
+# TODO: si usarás `supabase start` para desarrollo local, completa este
+# archivo corriendo `supabase init` y fusionando con este proyecto, o
+# simplemente usa un proyecto de Supabase en la nube y omite este archivo.
+
+project_id = "tecnopuentes"

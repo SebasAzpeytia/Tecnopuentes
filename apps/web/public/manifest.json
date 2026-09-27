@@ -1,0 +1,10 @@
+{
+  "name": "TecnoPuentes",
+  "short_name": "TecnoPuentes",
+  "description": "Conectando generaciones a través de la tecnología",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fefdf7",
+  "theme_color": "#1d459e",
+  "icons": []
+}

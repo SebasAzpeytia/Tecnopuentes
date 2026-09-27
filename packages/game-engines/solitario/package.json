@@ -1,0 +1,9 @@
+{
+  "name": "@tecnopuentes/game-engine-solitario",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/machine.ts",
+  "dependencies": {
+    "xstate": "^5.18.0"
+  }
+}
