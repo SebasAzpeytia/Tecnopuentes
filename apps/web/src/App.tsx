@@ -9,9 +9,13 @@ import IniciarSesion from '@/routes/auth/IniciarSesion';
 import CrearCuenta from '@/routes/auth/CrearCuenta';
 import UnirseAsilo from '@/routes/auth/UnirseAsilo';
 import IngresarCodigo from '@/routes/auth/IngresarCodigo';
+import RegistrarAsilo from '@/routes/auth/RegistrarAsilo';
 
 // Rutas de Residente (ejemplo inicial)
 import Home from '@/routes/residente/Home';
+
+// Rutas de Anfitrión
+import Panel from '@/routes/anfitrion/Panel';
 
 export default function App() {
   const { usuarioId, setSesion, limpiarSesion } = useSesionStore();
@@ -74,6 +78,12 @@ export default function App() {
             
             {/* Dashboard / Home */}
             <Route path="/home" element={<Home />} />
+            
+            {/* Dashboard / Panel Anfitrión */}
+            <Route path="/panel" element={<Panel />} />
+            
+            {/* Registro de asilo */}
+            <Route path="/registrar-asilo" element={<RegistrarAsilo />} />
             
             {/* Redirigir cualquier otra cosa a home (o unirse-asilo si luego verificamos que no tiene asilo) */}
             <Route path="*" element={<Navigate to="/home" replace />} />
