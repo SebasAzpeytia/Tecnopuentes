@@ -31,16 +31,19 @@ export default function RegistrarAsilo() {
     setCargando(true);
 
     try {
-      // 1. Crear el asilo
-      const { data: asilo, error: asiloError } = await supabase
+      // Como las políticas de RLS de Supabase nos impiden LEER el asilo (con .select())
+      // antes de ser miembros, generamos el ID aquí en el cliente y hacemos los inserts sin .select().
+      const nuevoAsiloId = crypto.randomUUID();
+
+      // 1. Crear el asilo (sin .select())
+      const { error: asiloError } = await supabase
         .from('asilos')
         .insert({
+          id: nuevoAsiloId,
           nombre,
           direccion,
           creado_por: usuarioId,
-        })
-        .select()
-        .single();
+        });
 
       if (asiloError) throw asiloError;
 
@@ -49,7 +52,7 @@ export default function RegistrarAsilo() {
         .from('asilo_miembros')
         .insert({
           usuario_id: usuarioId,
-          asilo_id: asilo.id,
+          asilo_id: nuevoAsiloId,
           rol: 'anfitrion',
           estado: 'activo'
         });
@@ -57,7 +60,7 @@ export default function RegistrarAsilo() {
       if (miembroError) throw miembroError;
 
       // 3. Actualizar estado global
-      setSesion({ asiloActivoId: asilo.id, rolActivo: 'anfitrion' });
+      setSesion({ asiloActivoId: nuevoAsiloId, rolActivo: 'anfitrion' });
 
       // 4. Redirigir al panel
       navigate('/panel');
