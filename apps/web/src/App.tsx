@@ -23,6 +23,8 @@ import AyudaSoporte from '@/routes/residente/perfil/AyudaSoporte';
 
 // Rutas de Anfitrión
 import Panel from '@/routes/anfitrion/Panel';
+import Miembros from '@/routes/anfitrion/Miembros';
+import AgregarMiembro from '@/routes/anfitrion/AgregarMiembro';
 
 export default function App() {
   const { usuarioId, setSesion, limpiarSesion } = useSesionStore();
@@ -95,6 +97,8 @@ export default function App() {
             
             {/* Dashboard / Panel Anfitrión */}
             <Route path="/panel" element={<Panel />} />
+            <Route path="/panel/miembros" element={<Miembros />} />
+            <Route path="/panel/agregar-miembro" element={<AgregarMiembro />} />
             
             {/* Registro de asilo */}
             <Route path="/registrar-asilo" element={<RegistrarAsilo />} />
