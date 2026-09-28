@@ -25,6 +25,8 @@ import AyudaSoporte from '@/routes/residente/perfil/AyudaSoporte';
 import Panel from '@/routes/anfitrion/Panel';
 import Miembros from '@/routes/anfitrion/Miembros';
 import AgregarMiembro from '@/routes/anfitrion/AgregarMiembro';
+import PersonalizarIconos from '@/routes/anfitrion/PersonalizarIconos';
+import EditarIcono from '@/routes/anfitrion/EditarIcono';
 
 export default function App() {
   const { usuarioId, rolActivo, asiloActivoId, setSesion, limpiarSesion } = useSesionStore();
@@ -132,6 +134,8 @@ export default function App() {
                 <Route path="/panel" element={<Panel />} />
                 <Route path="/panel/miembros" element={<Miembros />} />
                 <Route path="/panel/agregar-miembro" element={<AgregarMiembro />} />
+                <Route path="/panel/personalizar" element={<PersonalizarIconos />} />
+                <Route path="/panel/personalizar/editar" element={<EditarIcono />} />
               </>
             )}
             
