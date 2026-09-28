@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-
+import { supabase } from '@/lib/supabaseClient';
 export default function UnirseAsilo() {
   const navigate = useNavigate();
 
@@ -117,6 +117,29 @@ export default function UnirseAsilo() {
               Crea un nuevo espacio como dueño o administrador
             </p>
           </div>
+        </button>
+      </div>
+
+      {/* Botón para cerrar sesión */}
+      <div style={{ marginTop: '32px' }}>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            // El useEffect en App.tsx detectará el cambio y limpiará el estado global,
+            // pero podemos forzar la navegación por precaución.
+            navigate('/bienvenida');
+          }}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--color-gray)',
+            fontSize: '14px',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            fontFamily: 'var(--font-body)',
+          }}
+        >
+          Cerrar sesión
         </button>
       </div>
     </div>
