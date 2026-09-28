@@ -140,6 +140,12 @@ export default function App() {
                 <Route path="/panel/personalizar" element={<PersonalizarIconos />} />
                 <Route path="/panel/personalizar/editar" element={<EditarIcono />} />
                 <Route path="/panel/reportes" element={<Reportes />} />
+              </>
+            )}
+
+            {/* Rutas EXCLUSIVAS del ANFITRIÓN */}
+            {rolActivo === 'anfitrion' && (
+              <>
                 <Route path="/panel/monitores" element={<MonitoresYPersonal />} />
                 <Route path="/panel/invitar-monitor" element={<InvitarMonitor />} />
               </>
