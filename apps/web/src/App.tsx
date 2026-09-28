@@ -16,6 +16,10 @@ import Home from '@/routes/residente/Home';
 import Actividad from '@/routes/residente/Actividad';
 import Chat from '@/routes/residente/Chat';
 import Perfil from '@/routes/residente/Perfil';
+import MiInformacion from '@/routes/residente/perfil/MiInformacion';
+import CambiarContrasena from '@/routes/residente/perfil/CambiarContrasena';
+import Notificaciones from '@/routes/residente/perfil/Notificaciones';
+import AyudaSoporte from '@/routes/residente/perfil/AyudaSoporte';
 
 // Rutas de Anfitrión
 import Panel from '@/routes/anfitrion/Panel';
@@ -84,6 +88,10 @@ export default function App() {
             <Route path="/actividad" element={<Actividad />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/perfil" element={<Perfil />} />
+            <Route path="/perfil/informacion" element={<MiInformacion />} />
+            <Route path="/perfil/contrasena" element={<CambiarContrasena />} />
+            <Route path="/perfil/notificaciones" element={<Notificaciones />} />
+            <Route path="/perfil/ayuda" element={<AyudaSoporte />} />
             
             {/* Dashboard / Panel Anfitrión */}
             <Route path="/panel" element={<Panel />} />

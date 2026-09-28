@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/features/auth/useAuth';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/layout/BottomNav';
 import { useSesionStore } from '@/state/useSesionStore';
 
 export default function Perfil() {
+  const navigate = useNavigate();
   const { cerrarSesion } = useAuth();
   const { asiloActivoId } = useSesionStore();
   const [nombre, setNombre] = useState('Residente');
   const [inicial, setInicial] = useState('R');
   const [nombreAsilo, setNombreAsilo] = useState('Tu asilo');
+  const [mostrarModalSalir, setMostrarModalSalir] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -33,10 +36,10 @@ export default function Perfil() {
   }, [asiloActivoId]);
 
   const opcionesMenu = [
-    { label: 'Editar mi información', icon: 'fa-solid fa-user', color: 'var(--color-blue)' },
-    { label: 'Cambiar contraseña', icon: 'fa-solid fa-lock', color: 'var(--color-orange)' },
-    { label: 'Notificaciones', icon: 'fa-solid fa-bell', color: 'var(--color-olive)' },
-    { label: 'Ayuda y soporte', icon: 'fa-solid fa-circle-question', color: 'var(--color-blue-light)' },
+    { label: 'Editar mi información', icon: 'fa-solid fa-user', color: 'var(--color-blue)', path: '/perfil/informacion' },
+    { label: 'Cambiar contraseña', icon: 'fa-solid fa-lock', color: 'var(--color-orange)', path: '/perfil/contrasena' },
+    { label: 'Notificaciones', icon: 'fa-solid fa-bell', color: 'var(--color-olive)', path: '/perfil/notificaciones' },
+    { label: 'Ayuda y soporte', icon: 'fa-solid fa-circle-question', color: 'var(--color-blue-light)', path: '/perfil/ayuda' },
   ];
 
   return (
@@ -93,6 +96,7 @@ export default function Perfil() {
         {opcionesMenu.map((opcion, idx) => (
           <button
             key={idx}
+            onClick={() => navigate(opcion.path)}
             style={{
               backgroundColor: 'var(--color-white)',
               border: 'none',
@@ -133,10 +137,7 @@ export default function Perfil() {
 
       {/* Botón de Cerrar Sesión */}
       <button
-        onClick={async () => {
-          await cerrarSesion();
-          // El App.tsx nos redirigirá automáticamente a /bienvenida
-        }}
+        onClick={() => setMostrarModalSalir(true)}
         style={{
           width: '100%',
           padding: '16px',
@@ -153,6 +154,50 @@ export default function Perfil() {
       </button>
 
       <BottomNav />
+
+      {/* Modal de Cerrar Sesión */}
+      {mostrarModalSalir && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(38, 38, 38, 0.95)', // Fondo oscuro como el wireframe
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '24px', zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'var(--color-white)',
+            borderRadius: '32px',
+            padding: '32px 24px',
+            width: '100%',
+            maxWidth: '340px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center'
+          }}>
+            <div style={{ width: '64px', height: '64px', backgroundColor: 'var(--color-peach)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', marginBottom: '24px' }}>
+              👋
+            </div>
+            <h2 style={{ fontSize: '20px', color: 'var(--color-text)', margin: '0 0 8px 0', fontFamily: 'var(--font-title)' }}>
+              ¿Quieres cerrar sesión?
+            </h2>
+            <p style={{ fontSize: '14px', color: 'var(--color-gray)', margin: '0 0 32px 0', lineHeight: '1.5' }}>
+              Podrás volver a entrar cuando quieras con tu correo y contraseña.
+            </p>
+            <button
+              onClick={async () => await cerrarSesion()}
+              style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', marginBottom: '16px' }}
+            >
+              Sí, cerrar sesión
+            </button>
+            <button
+              onClick={() => setMostrarModalSalir(false)}
+              style={{ width: '100%', padding: '16px', backgroundColor: 'transparent', border: '2px solid var(--color-blue)', color: 'var(--color-blue)', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              No, quedarme aquí
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
