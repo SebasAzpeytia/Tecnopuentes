@@ -1,7 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BottomNavMonitor from '@/components/layout/BottomNavMonitor';
+import { useSesionStore } from '@/state/useSesionStore';
 
 export default function Reportes() {
+  const navigate = useNavigate();
+  const { rolActivo } = useSesionStore();
   const [nombreAsilo] = useState('Asilo Los Álamos'); // Mock V1
 
   const tiposReporte = [
@@ -40,23 +44,26 @@ export default function Reportes() {
             {nombreAsilo}
           </p>
         </div>
-        <button
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--color-blue-light)',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-white)',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-        >
-          <i className="fa-solid fa-gear" style={{ fontSize: '18px' }}></i>
-        </button>
+        {rolActivo === 'anfitrion' && (
+          <button
+            onClick={() => navigate('/panel/monitores')}
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--color-blue-light)',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-white)',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+          >
+            <i className="fa-solid fa-gear" style={{ fontSize: '18px' }}></i>
+          </button>
+        )}
       </div>
 
       {/* Filtros rápidos */}
