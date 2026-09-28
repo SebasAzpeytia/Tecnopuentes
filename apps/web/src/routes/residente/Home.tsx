@@ -4,12 +4,12 @@ import { useSesionStore } from '@/state/useSesionStore';
 import BottomNav from '@/components/layout/BottomNav';
 
 const JUEGOS = [
-  { id: 'memorama', nombre: 'Memorama', emoji: '🧠', bgColor: 'var(--color-blue)', borderColor: 'var(--color-blue-light)' },
-  { id: 'trivia', nombre: 'Trivia', emoji: '❓', bgColor: 'var(--color-orange)', borderColor: 'var(--color-peach)' },
-  { id: 'damaschinas', nombre: 'Damas chinas', emoji: '⚫', bgColor: 'var(--color-blue-light)', borderColor: 'var(--color-blue-light)' },
-  { id: 'ajedrez', nombre: 'Ajedrez', emoji: '♟️', bgColor: 'var(--color-orange)', borderColor: 'var(--color-peach)' },
-  { id: 'solitario', nombre: 'Solitario', emoji: '🃏', bgColor: 'var(--color-blue)', borderColor: 'var(--color-blue-light)' },
-  { id: 'loteria', nombre: 'Lotería', emoji: '🎴', bgColor: 'var(--color-peach)', borderColor: 'var(--color-peach)' },
+  { id: 'memorama', nombre: 'Memorama', icon: 'fa-solid fa-brain', bgColor: 'var(--color-blue)', borderColor: 'var(--color-blue-light)' },
+  { id: 'trivia', nombre: 'Trivia', icon: 'fa-solid fa-question', bgColor: 'var(--color-orange)', borderColor: 'var(--color-peach)' },
+  { id: 'damaschinas', nombre: 'Damas chinas', icon: 'fa-solid fa-circle-dot', bgColor: 'var(--color-blue-light)', borderColor: 'var(--color-blue-light)' },
+  { id: 'ajedrez', nombre: 'Ajedrez', icon: 'fa-solid fa-chess-knight', bgColor: 'var(--color-orange)', borderColor: 'var(--color-peach)' },
+  { id: 'solitario', nombre: 'Solitario', icon: 'fa-solid fa-clone', bgColor: 'var(--color-blue)', borderColor: 'var(--color-blue-light)' },
+  { id: 'loteria', nombre: 'Lotería', icon: 'fa-solid fa-table-cells-large', bgColor: 'var(--color-peach)', borderColor: 'var(--color-peach)' },
 ];
 
 export default function Home() {
@@ -82,7 +82,7 @@ export default function Home() {
             cursor: 'pointer',
           }}
         >
-          <span style={{ fontSize: '24px' }}>🔔</span>
+          <i className="fa-solid fa-bell" style={{ fontSize: '20px', color: 'var(--color-white)' }}></i>
         </button>
       </div>
 
@@ -128,10 +128,11 @@ export default function Home() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '32px', // Tamaño del emoji
+                fontSize: '28px', // Tamaño del icono
+                color: 'var(--color-white)', // Color del icono FontAwesome
               }}
             >
-              {juego.emoji}
+              <i className={juego.icon}></i>
             </div>
             
             {/* Nombre del juego */}
