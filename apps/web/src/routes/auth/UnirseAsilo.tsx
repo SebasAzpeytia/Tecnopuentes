@@ -1,12 +1,124 @@
-// Wireframe de referencia en Figma: Pantalla 17 - Unirse a un asilo
-// TODO: implementar la UI real siguiendo ese wireframe y los tokens
-// de marca en src/styles/tokens.css.
+import { useNavigate } from 'react-router-dom';
 
 export default function UnirseAsilo() {
+  const navigate = useNavigate();
+
   return (
-    <div style={{ padding: 24, fontFamily: 'var(--font-body)' }}>
-      <h1>UnirseAsilo</h1>
-      <p>Pantalla pendiente de implementar. Ver: Pantalla 17 - Unirse a un asilo</p>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '24px',
+        boxSizing: 'border-box',
+        backgroundColor: 'var(--color-bg)',
+      }}
+    >
+      <h1
+        style={{
+          fontSize: '28px',
+          color: 'var(--color-text)',
+          marginBottom: '8px',
+          textAlign: 'center',
+        }}
+      >
+        ¡Ya casi!
+      </h1>
+      <p
+        style={{
+          fontSize: '14px',
+          color: 'var(--color-gray)',
+          textAlign: 'center',
+          maxWidth: '260px',
+          marginBottom: '40px',
+        }}
+      >
+        Elige cómo quieres continuar en TecnoPuentes
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+        {/* Tarjeta: Tengo código */}
+        <button
+          onClick={() => navigate('/ingresar-codigo')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            backgroundColor: 'var(--color-white)',
+            border: '2px solid var(--color-blue-light)',
+            borderRadius: 'var(--radius-card)',
+            padding: '20px',
+            cursor: 'pointer',
+            textAlign: 'left',
+            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.03)',
+          }}
+        >
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              minWidth: '48px',
+              backgroundColor: 'var(--color-blue)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <i className="fa-solid fa-key" style={{ color: '#FDE047', fontSize: '20px' }}></i>
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--color-text)' }}>
+              Tengo un código de invitación
+            </h3>
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
+              Únete como residente o monitor de un asilo ya registrado
+            </p>
+          </div>
+        </button>
+
+        {/* Tarjeta: Registrar asilo */}
+        <button
+          onClick={() => navigate('/registrar-asilo')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            backgroundColor: 'var(--color-white)',
+            border: '2px solid var(--color-peach)',
+            borderRadius: 'var(--radius-card)',
+            padding: '20px',
+            cursor: 'pointer',
+            textAlign: 'left',
+            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.03)',
+          }}
+        >
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              minWidth: '48px',
+              backgroundColor: 'var(--color-orange)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <i className="fa-solid fa-house" style={{ color: 'var(--color-bg)', fontSize: '20px' }}></i>
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--color-text)' }}>
+              Quiero registrar mi asilo
+            </h3>
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
+              Crea un nuevo espacio como dueño o administrador
+            </p>
+          </div>
+        </button>
+      </div>
     </div>
   );
 }

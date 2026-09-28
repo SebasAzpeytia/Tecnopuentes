@@ -1,9 +1,56 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useAuth } from '@/features/auth/useAuth';
 
 export default function CrearCuenta() {
   const navigate = useNavigate();
+  const { crearCuenta } = useAuth();
+
+  const [nombre, setNombre] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [aceptoTerminos, setAceptoTerminos] = useState(false);
+  
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!nombre || !email || !password || !confirmPassword) {
+      setError('Por favor, completa todos los campos.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    if (!aceptoTerminos) {
+      setError('Debes aceptar los términos y condiciones.');
+      return;
+    }
+
+    setCargando(true);
+    const { data, error: authError } = await crearCuenta(email, password, nombre);
+    setCargando(false);
+
+    if (authError) {
+      setError(authError.message || 'Ocurrió un error al crear la cuenta.');
+      return;
+    }
+
+    // Si Supabase requiere confirmación de correo, la sesión será null al inicio.
+    if (!data.session) {
+      alert('¡Cuenta creada! Por favor revisa tu correo electrónico para confirmarla antes de iniciar sesión.');
+      navigate('/iniciar-sesion');
+    }
+  };
 
   return (
     <div
@@ -19,6 +66,7 @@ export default function CrearCuenta() {
       {/* Header: Botón regresar y Título */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '20px', marginBottom: '8px' }}>
         <button
+          type="button"
           onClick={() => navigate(-1)}
           style={{
             width: '40px',
@@ -46,27 +94,37 @@ export default function CrearCuenta() {
       </p>
 
       {/* Formulario */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
         <Input 
           type="text" 
           placeholder="Nombre completo" 
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
         />
         <Input 
           type="email" 
           placeholder="Correo electrónico o teléfono" 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <Input 
           type="password" 
           placeholder="Contraseña" 
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
         <Input 
           type="password" 
           placeholder="Confirmar contraseña" 
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
         />
 
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '4px' }}>
           <input 
             type="checkbox" 
+            checked={aceptoTerminos}
+            onChange={(e) => setAceptoTerminos(e.target.checked)}
             style={{ 
               width: '18px', 
               height: '18px', 
@@ -79,16 +137,21 @@ export default function CrearCuenta() {
           </span>
         </label>
 
+        {error && (
+          <p style={{ color: 'var(--color-orange-dark)', fontSize: '14px', margin: 0, fontWeight: 600 }}>
+            {error}
+          </p>
+        )}
+
         <Button
-          variante="secundario" /* El naranja según el diseño */
+          type="submit"
+          variante="secundario"
           style={{ width: '100%', marginTop: '8px' }}
-          onClick={() => {
-            // TODO: Integrar lógica de crear cuenta
-          }}
+          disabled={cargando}
         >
-          Crear cuenta
+          {cargando ? 'Cargando...' : 'Crear cuenta'}
         </Button>
-      </div>
+      </form>
 
       {/* Footer */}
       <div style={{ textAlign: 'center', paddingBottom: '20px', marginTop: '40px' }}>

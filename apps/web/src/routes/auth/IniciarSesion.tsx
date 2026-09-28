@@ -1,9 +1,41 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useAuth } from '@/features/auth/useAuth';
 
 export default function IniciarSesion() {
   const navigate = useNavigate();
+  const { iniciarSesion } = useAuth();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!email || !password) {
+      setError('Por favor, completa ambos campos.');
+      return;
+    }
+
+    setCargando(true);
+    const { error: authError } = await iniciarSesion(email, password);
+    setCargando(false);
+
+    if (authError) {
+      console.error('Error de Supabase al iniciar sesión:', authError);
+      if (authError.message === 'Invalid login credentials') {
+        setError('Correo o contraseña incorrectos.');
+      } else {
+        setError(`Error: ${authError.message}`);
+      }
+    }
+    // Si es exitoso, App.tsx detectará el cambio de sesión y redirigirá automáticamente.
+  };
 
   return (
     <div
@@ -19,6 +51,7 @@ export default function IniciarSesion() {
       {/* Header: Botón regresar y Título */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '20px', marginBottom: '8px' }}>
         <button
+          type="button"
           onClick={() => navigate(-1)}
           style={{
             width: '40px',
@@ -46,15 +79,25 @@ export default function IniciarSesion() {
       </p>
 
       {/* Formulario */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
         <Input 
           type="email" 
-          placeholder="Correo electrónico o teléfono" 
+          placeholder="Correo electrónico o teléfono"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <Input 
           type="password" 
-          placeholder="Contraseña" 
+          placeholder="Contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
+
+        {error && (
+          <p style={{ color: 'var(--color-orange-dark)', fontSize: '14px', margin: 0, fontWeight: 600 }}>
+            {error}
+          </p>
+        )}
 
         <div style={{ textAlign: 'right', marginTop: '-8px' }}>
           <a
@@ -76,15 +119,14 @@ export default function IniciarSesion() {
         </div>
 
         <Button
+          type="submit"
           variante="primario"
           style={{ width: '100%', marginTop: '16px' }}
-          onClick={() => {
-            // TODO: Integrar lógica de useAuth aquí
-          }}
+          disabled={cargando}
         >
-          Entrar
+          {cargando ? 'Cargando...' : 'Entrar'}
         </Button>
-      </div>
+      </form>
 
       {/* Footer */}
       <div style={{ textAlign: 'center', paddingBottom: '20px', marginTop: '40px' }}>
