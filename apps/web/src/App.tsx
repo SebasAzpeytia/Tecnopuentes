@@ -11,8 +11,9 @@ import UnirseAsilo from '@/routes/auth/UnirseAsilo';
 import IngresarCodigo from '@/routes/auth/IngresarCodigo';
 import RegistrarAsilo from '@/routes/auth/RegistrarAsilo';
 
-// Rutas de Residente (ejemplo inicial)
+// Rutas de Residente
 import Home from '@/routes/residente/Home';
+import Actividad from '@/routes/residente/Actividad';
 
 // Rutas de Anfitrión
 import Panel from '@/routes/anfitrion/Panel';
@@ -78,6 +79,7 @@ export default function App() {
             
             {/* Dashboard / Home */}
             <Route path="/home" element={<Home />} />
+            <Route path="/actividad" element={<Actividad />} />
             
             {/* Dashboard / Panel Anfitrión */}
             <Route path="/panel" element={<Panel />} />
