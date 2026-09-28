@@ -45,10 +45,23 @@ export default function CrearCuenta() {
       return;
     }
 
+    // Supabase tiene activa por defecto la protección "Evitar enumeración de correos".
+    // Esto hace que si intentas registrar un correo que YA EXISTE, Supabase finge que tuvo éxito
+    // (no devuelve error), pero devuelve un usuario sin "identidades".
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      setError('Este correo electrónico ya está registrado. Intenta iniciar sesión.');
+      return;
+    }
+
+    // Si llegamos aquí, la cuenta SÍ se creó de verdad.
     // Si Supabase requiere confirmación de correo, la sesión será null al inicio.
     if (!data.session) {
       alert('¡Cuenta creada! Por favor revisa tu correo electrónico para confirmarla antes de iniciar sesión.');
       navigate('/iniciar-sesion');
+    } else {
+      // Como desactivaste la confirmación de correos, la sesión ya viene activa.
+      // App.tsx detectará la sesión automáticamente y nos mandará al flujo de UnirseAsilo.
+      // (No necesitamos hacer nada más aquí).
     }
   };
 

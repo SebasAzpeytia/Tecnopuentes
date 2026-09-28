@@ -1,7 +1,21 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+
 export default function UnirseAsilo() {
   const navigate = useNavigate();
+  const [nombre, setNombre] = useState<string>('');
+
+  useEffect(() => {
+    // Obtenemos el nombre del usuario directamente de su sesión de Supabase
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.user_metadata?.nombre_completo) {
+        // Tomamos solo el primer nombre para que se vea más amigable
+        const primerNombre = user.user_metadata.nombre_completo.split(' ')[0];
+        setNombre(primerNombre);
+      }
+    });
+  }, []);
 
   return (
     <div
@@ -24,7 +38,7 @@ export default function UnirseAsilo() {
           textAlign: 'center',
         }}
       >
-        ¡Ya casi!
+        ¡Ya casi{nombre ? `, ${nombre}` : ''}!
       </h1>
       <p
         style={{
