@@ -27,26 +27,47 @@ import Miembros from '@/routes/anfitrion/Miembros';
 import AgregarMiembro from '@/routes/anfitrion/AgregarMiembro';
 
 export default function App() {
-  const { usuarioId, setSesion, limpiarSesion } = useSesionStore();
+  const { usuarioId, rolActivo, asiloActivoId, setSesion, limpiarSesion } = useSesionStore();
   const [cargando, setCargando] = useState(true);
+
+  // Función para obtener asilo y rol
+  const cargarDatosUsuario = async (userId: string) => {
+    setSesion({ usuarioId: userId });
+    
+    // Obtenemos el asilo y rol (si existe)
+    const { data: miembro } = await supabase
+      .from('asilo_miembros')
+      .select('asilo_id, rol')
+      .eq('usuario_id', userId)
+      .maybeSingle();
+
+    if (miembro) {
+      setSesion({ asiloActivoId: miembro.asilo_id, rolActivo: miembro.rol as any });
+    } else {
+      // Si no tiene asilo asignado todavía
+      setSesion({ asiloActivoId: null, rolActivo: null });
+    }
+  };
 
   useEffect(() => {
     // 1. Revisar si hay una sesión activa al cargar la app
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        setSesion({ usuarioId: session.user.id });
+        await cargarDatosUsuario(session.user.id);
       } else {
         limpiarSesion();
       }
       setCargando(false);
     });
 
-    // 2. Escuchar cambios (login, logout, token refresh)
+    // 2. Escuchar cambios (login, logout)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        setSesion({ usuarioId: session.user.id });
+        // Al iniciar sesión, cargamos sus datos de rol.
+        // No mostramos pantalla de carga aquí para no parpadear, pero se actualizará el estado.
+        await cargarDatosUsuario(session.user.id);
       } else {
         limpiarSesion();
       }
@@ -56,7 +77,6 @@ export default function App() {
   }, [setSesion, limpiarSesion]);
 
   if (cargando) {
-    // TODO: Reemplazar esto por un componente de "Splash Screen" con el logo
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'var(--font-body)' }}>
         <h2>Cargando TecnoPuentes...</h2>
@@ -64,10 +84,17 @@ export default function App() {
     );
   }
 
+  // Determinar a dónde debe ir por defecto un usuario logueado
+  const getHomeRoute = () => {
+    if (rolActivo === 'anfitrion' || rolActivo === 'monitor') return '/panel';
+    if (rolActivo === 'residente') return '/home';
+    return '/unirse-asilo'; // Si no tiene asilo ni rol
+  };
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to={usuarioId ? "/home" : "/bienvenida"} replace />} />
+        <Route path="/" element={<Navigate to={usuarioId ? getHomeRoute() : "/bienvenida"} replace />} />
         
         {/* === Rutas Públicas (Solo para usuarios NO logueados) === */}
         {!usuarioId ? (
@@ -75,36 +102,41 @@ export default function App() {
             <Route path="/bienvenida" element={<Bienvenida />} />
             <Route path="/iniciar-sesion" element={<IniciarSesion />} />
             <Route path="/crear-cuenta" element={<CrearCuenta />} />
-            {/* Redirigir cualquier otra cosa a bienvenida */}
             <Route path="*" element={<Navigate to="/bienvenida" replace />} />
           </>
         ) : (
           /* === Rutas Protegidas (Solo para usuarios LOGUEADOS) === */
           <>
-            {/* Flujo de Unirse a Asilo */}
+            {/* Rutas compartidas (sin rol o en proceso de tener asilo) */}
             <Route path="/unirse-asilo" element={<UnirseAsilo />} />
             <Route path="/ingresar-codigo" element={<IngresarCodigo />} />
-            
-            {/* Dashboard / Home */}
-            <Route path="/home" element={<Home />} />
-            <Route path="/actividad" element={<Actividad />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/perfil" element={<Perfil />} />
-            <Route path="/perfil/informacion" element={<MiInformacion />} />
-            <Route path="/perfil/contrasena" element={<CambiarContrasena />} />
-            <Route path="/perfil/notificaciones" element={<Notificaciones />} />
-            <Route path="/perfil/ayuda" element={<AyudaSoporte />} />
-            
-            {/* Dashboard / Panel Anfitrión */}
-            <Route path="/panel" element={<Panel />} />
-            <Route path="/panel/miembros" element={<Miembros />} />
-            <Route path="/panel/agregar-miembro" element={<AgregarMiembro />} />
-            
-            {/* Registro de asilo */}
             <Route path="/registrar-asilo" element={<RegistrarAsilo />} />
+
+            {/* Rutas de RESIDENTE */}
+            {rolActivo === 'residente' && (
+              <>
+                <Route path="/home" element={<Home />} />
+                <Route path="/actividad" element={<Actividad />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/perfil" element={<Perfil />} />
+                <Route path="/perfil/informacion" element={<MiInformacion />} />
+                <Route path="/perfil/contrasena" element={<CambiarContrasena />} />
+                <Route path="/perfil/notificaciones" element={<Notificaciones />} />
+                <Route path="/perfil/ayuda" element={<AyudaSoporte />} />
+              </>
+            )}
             
-            {/* Redirigir cualquier otra cosa a home (o unirse-asilo si luego verificamos que no tiene asilo) */}
-            <Route path="*" element={<Navigate to="/home" replace />} />
+            {/* Rutas de ANFITRIÓN / MONITOR */}
+            {(rolActivo === 'anfitrion' || rolActivo === 'monitor') && (
+              <>
+                <Route path="/panel" element={<Panel />} />
+                <Route path="/panel/miembros" element={<Miembros />} />
+                <Route path="/panel/agregar-miembro" element={<AgregarMiembro />} />
+              </>
+            )}
+            
+            {/* Guard route: cualquier URL inválida o rol incorrecto lo redirige a su home */}
+            <Route path="*" element={<Navigate to={getHomeRoute()} replace />} />
           </>
         )}
       </Routes>
