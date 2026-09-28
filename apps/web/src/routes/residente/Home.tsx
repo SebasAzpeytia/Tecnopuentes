@@ -14,14 +14,16 @@ const JUEGOS = [
 
 export default function Home() {
   const { asiloActivoId } = useSesionStore();
-  const [nombreResidente, setNombreResidente] = useState<string>('Residente');
-  const [nombreAsilo, setNombreAsilo] = useState<string>('Tu asilo');
+  const [nombreResidente, setNombreResidente] = useState<string | null>(null);
+  const [nombreAsilo, setNombreAsilo] = useState<string | null>(null);
 
   useEffect(() => {
     // 1. Obtener nombre del usuario
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user?.user_metadata?.nombre_completo) {
         setNombreResidente(user.user_metadata.nombre_completo.split(' ')[0]);
+      } else {
+        setNombreResidente('');
       }
     });
 
@@ -46,8 +48,6 @@ export default function Home() {
         backgroundColor: 'var(--color-bg)',
         paddingBottom: '100px', // Espacio para el BottomNav
         fontFamily: 'var(--font-body)',
-        boxSizing: 'border-box',
-        overflowX: 'hidden', // Previene el scroll horizontal
       }}
     >
       {/* Header superior */}
@@ -60,11 +60,19 @@ export default function Home() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: '24px', color: 'var(--color-text)', margin: '0 0 4px 0' }}>
-            Hola, {nombreResidente}
+          <h1 style={{ fontSize: '24px', color: 'var(--color-text)', margin: '0 0 4px 0', minHeight: '33px', display: 'flex', alignItems: 'center' }}>
+            {nombreResidente === null ? (
+              <span style={{ width: '150px', height: '24px', backgroundColor: 'var(--color-light-gray)', borderRadius: '4px', opacity: 0.5 }}></span>
+            ) : (
+              `Hola${nombreResidente ? `, ${nombreResidente}` : ''}`
+            )}
           </h1>
-          <p style={{ fontSize: '14px', color: 'var(--color-gray)', margin: 0 }}>
-            {nombreAsilo}
+          <p style={{ fontSize: '14px', color: 'var(--color-gray)', margin: 0, minHeight: '19px', display: 'flex', alignItems: 'center' }}>
+            {nombreAsilo === null ? (
+              <span style={{ width: '100px', height: '14px', backgroundColor: 'var(--color-light-gray)', borderRadius: '4px', opacity: 0.5, marginTop: '4px' }}></span>
+            ) : (
+              nombreAsilo
+            )}
           </p>
         </div>
         
