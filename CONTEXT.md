@@ -131,31 +131,18 @@ Ya están declaradas como variables CSS en `apps/web/src/styles/tokens.css`.
 ## 5. Estado actual del proyecto (al momento de este scaffold)
 
 ### ✅ Ya resuelto
-- Diseño completo de wireframes en Figma (archivo "Tecnopuentes") —
-  ~20 pantallas cubriendo onboarding, Residente, Anfitrión,
-  personalización.
-- Esquema completo de base de datos con RLS
-  (`supabase/migrations/001_schema_inicial_tecnopuentes.sql`).
-- Configuración de Storage con políticas multi-tenant
-  (`supabase/migrations/002_storage_tecnopuentes.sql`).
-- Función RPC `canjear_codigo_invitacion` que resuelve toda la lógica
-  de "unirse a un asilo con código" en una sola llamada seguridad.
-- Stack tecnológico validado (React+Vite PWA / Supabase / NestJS acotado
-  / XState en cuarentena / Zustand para estado global).
+- Diseño completo de wireframes en Figma (archivo "Tecnopuentes").
+- Esquema completo de base de datos con RLS (`supabase/migrations/...`).
+- Configuración de Storage con políticas multi-tenant.
+- Función RPC `canjear_codigo_invitacion` que resuelve toda la lógica de "unirse a un asilo".
+- Stack tecnológico validado (React+Vite PWA / Supabase / NestJS acotado / Zustand).
+- **[NUEVO]** Fase de Maquetación UI 100% completada. Se construyeron todas las pantallas en React para Residente, Monitor y Anfitrión, incluyendo sub-vistas (Ayuda, Notificaciones, etc.).
+- **[NUEVO]** Enrutamiento inteligente y "Route Guards" implementados en `App.tsx` usando Zustand (`useSesionStore`) para proteger rutas por rol.
 
-### ⚠️ Pendiente de diseño (no bloquea el v1, pero falta antes de cerrar el alcance completo)
-- Pantalla "Miembros" completa para el Anfitrión (agregar/expulsar
-  residentes) — hoy solo existe una vista parcial dentro del Panel.
-- Ficha individual del residente (historial, gráfico de horas).
-- Vista propia del Monitor (dashboard recortado según sus permisos).
-- Pantalla "Registrar mi asilo" (para cuando un Anfitrión nuevo elige
-  esa opción en el flujo de onboarding).
-- Recuperar contraseña, Editar mi información, Notificaciones, Ayuda
-  (referenciadas desde Perfil pero no diseñadas).
-
-### 🚧 Este scaffold (recién generado)
-Estructura inicial de carpetas y archivos base — **todavía no hay
-lógica funcional implementada**, son los cimientos. Ver sección 7.
+### ⚠️ Pendiente (Lógica de Datos y Motor de Juegos)
+- Aunque la UI está completa, toda la información actual son datos "quemados" (mocks). Falta conectar Supabase para leer asilos reales, miembros, mensajes de chat y estadísticas.
+- Falta la lógica de almacenamiento de personalización de juegos (`juegos_personalizacion`).
+- Falta el desarrollo funcional de los minijuegos (Memorama, Solitario) con XState.
 
 ---
 
@@ -222,22 +209,17 @@ implementación con el contexto completo de este documento.
 
 ## 8. Próximos pasos recomendados (en orden)
 
-1. **Correr las 2 migraciones SQL** en un proyecto nuevo de Supabase.
-   Verificar que Realtime esté habilitado para `mensajes_chat`.
-2. **Llenar `apps/web/.env`** con las llaves del proyecto de Supabase
-   (ver `.env.example`).
-3. **Implementar `supabaseClient.ts`** (ya tiene el stub) y el hook
-   `useAuth` en `features/auth/` — probar el flujo completo:
-   Bienvenida → Crear cuenta → Unirse a un asilo → Ingresar código →
-   llegar a Home.
-4. **Implementar el loop central del Residente:** Home → Memorama →
-   guardar `sesiones_juego` al terminar. Repetir con Solitario.
-5. **Mi Actividad + Chat grupal** (probar Supabase Realtime con
-   `mensajes_chat`) + Mi Perfil.
-6. **Panel del Anfitrión** — empezar por la lista de miembros
-   ordenada por tiempo de juego (ya hay una query natural: `sesiones_juego`
-   agrupado por `usuario_id`).
-7. Recién después: Invitar Monitor, permisos, personalización completa.
+1. **Terminar el Flujo de Unión (Códigos):**
+   Asegurar que un Residente nuevo pueda usar un código real y entrar a un Asilo real en la base de datos (Supabase).
+2. **Conectar la Base de Datos al Home del Residente:**
+   Lograr que la aplicación sepa *quién* es el usuario y lea el nombre real del asilo para mostrarlo en pantalla.
+3. **Preparar la Personalización (Base de datos):**
+   Conectar la lógica de `juegos_personalizacion` para poder leer emojis/imágenes customizados antes de que arranque el juego.
+4. **Implementar el loop central de Juegos:**
+   Desarrollar el motor XState para Memorama, jugar, y guardar `sesiones_juego` al terminar.
+5. **Mi Actividad + Chat grupal** (probar Supabase Realtime con `mensajes_chat`) + Mi Perfil.
+6. **Panel del Anfitrión** — reemplazar los mocks por la lista real de miembros (query a `asilo_miembros`).
+7. Recién después: Invitar Monitor, permisos granulares, reportes.
 
 No implementes Ajedrez, Trivia, Damas chinas, Lotería ni "Combina
 Dulces" todavía — están fuera del alcance del v1 aunque existan
