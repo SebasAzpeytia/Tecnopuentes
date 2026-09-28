@@ -14,6 +14,8 @@ import RegistrarAsilo from '@/routes/auth/RegistrarAsilo';
 // Rutas de Residente
 import Home from '@/routes/residente/Home';
 import Actividad from '@/routes/residente/Actividad';
+import Chat from '@/routes/residente/Chat';
+import Perfil from '@/routes/residente/Perfil';
 
 // Rutas de Anfitrión
 import Panel from '@/routes/anfitrion/Panel';
@@ -80,6 +82,8 @@ export default function App() {
             {/* Dashboard / Home */}
             <Route path="/home" element={<Home />} />
             <Route path="/actividad" element={<Actividad />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/perfil" element={<Perfil />} />
             
             {/* Dashboard / Panel Anfitrión */}
             <Route path="/panel" element={<Panel />} />
