@@ -41,10 +41,13 @@ export default function Home() {
   return (
     <div
       style={{
+        width: '100%',
         minHeight: '100vh',
         backgroundColor: 'var(--color-bg)',
         paddingBottom: '100px', // Espacio para el BottomNav
         fontFamily: 'var(--font-body)',
+        boxSizing: 'border-box',
+        overflowX: 'hidden', // Previene el scroll horizontal
       }}
     >
       {/* Header superior */}

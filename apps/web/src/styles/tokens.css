@@ -21,6 +21,10 @@
   --radius-card: 20px;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
