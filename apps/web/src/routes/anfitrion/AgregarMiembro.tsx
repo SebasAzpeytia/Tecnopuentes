@@ -28,6 +28,7 @@ export default function AgregarMiembro() {
 
   const [codigoData, setCodigoData] = useState<{ id: string; codigo: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [expiracion, setExpiracion] = useState('7'); // '1', '7', '30', 'never'
   const isFirstMount = useRef(true);
 
   const togglePermiso = (key: keyof typeof permisos) => {
@@ -83,10 +84,17 @@ export default function AgregarMiembro() {
             : permisos)
         : null;
 
+      let fechaExpiracion = null;
+      if (expiracion !== 'never') {
+        fechaExpiracion = new Date();
+        fechaExpiracion.setDate(fechaExpiracion.getDate() + parseInt(expiracion));
+      }
+
       const { error } = await supabase.from('codigos_invitacion')
         .update({
           rol_asignado: rol.toLowerCase(),
           permisos_predefinidos: permisosAEnviar,
+          expira_en: fechaExpiracion ? fechaExpiracion.toISOString() : null,
         })
         .eq('id', codigoData.id);
 
@@ -98,7 +106,7 @@ export default function AgregarMiembro() {
     // Usar un debounce ligero para no saturar si pican rápido los switches
     const timer = setTimeout(() => actualizarCodigo(), 300);
     return () => clearTimeout(timer);
-  }, [rol, nivelAcceso, permisos, codigoData]);
+  }, [rol, nivelAcceso, permisos, expiracion, codigoData]);
 
 
   const copiarAlPortapapeles = async () => {
@@ -293,9 +301,29 @@ export default function AgregarMiembro() {
             </h2>
           )}
           
-          <p style={{ fontSize: '12px', color: 'var(--color-gray)', margin: 0 }}>
-            Vence en 7 días • Un solo uso
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--color-gray)' }}>Validez:</span>
+            <select 
+              value={expiracion} 
+              onChange={(e) => setExpiracion(e.target.value)}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: 'var(--color-blue)',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                outline: 'none',
+                padding: '2px'
+              }}
+            >
+              <option value="1">1 día</option>
+              <option value="7">7 días</option>
+              <option value="30">30 días</option>
+              <option value="never">Sin fecha límite</option>
+            </select>
+            <span style={{ fontSize: '12px', color: 'var(--color-gray)' }}>• Un solo uso</span>
+          </div>
         </div>
       </div>
 

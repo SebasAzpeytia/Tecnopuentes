@@ -1,14 +1,110 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
+import { useSesionStore } from '@/state/useSesionStore';
 
 export default function MonitoresYPersonal() {
   const navigate = useNavigate();
+  const asiloActivoId = useSesionStore(state => state.asiloActivoId);
+  const [personal, setPersonal] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const personal = [
-    { id: 1, nombre: 'Rosa Delgado', estado: 'Activo', color: 'var(--color-blue)', rol: 'Administrador', bgRol: 'var(--color-blue)', desc: 'Acceso completo: dashboard, miembros, personalización y reportes' },
-    { id: 2, nombre: 'Pedro Sánchez', estado: 'Activo', color: 'var(--color-orange-dark)', rol: 'Personalizado', bgRol: 'var(--color-orange-dark)', desc: 'Puede: ver dashboard, gestionar miembros · No puede: personalización' },
-    { id: 3, nombre: 'Lucía Fernández', estado: 'Activo', color: 'var(--color-olive)', rol: 'Personalizado', bgRol: 'var(--color-orange-dark)', desc: 'Puede: solo ver dashboard y reportes' },
-    { id: 4, nombre: 'Tomás Vidal', estado: 'Activo', color: 'var(--color-blue-light)', rol: 'Pendiente', bgRol: 'var(--color-light-gray)', colorRol: 'var(--color-white)', desc: 'Invitación enviada - Esperando que acepte' },
-  ];
+  useEffect(() => {
+    cargarDatos();
+  }, [asiloActivoId]);
+
+  async function cargarDatos() {
+    if (!asiloActivoId) return;
+    setLoading(true);
+
+    try {
+      // 1. Cargar miembros activos (Monitores y Anfitriones)
+      const { data: miembrosActivos, error: errMiembros } = await supabase
+        .from('asilo_miembros')
+        .select('*, perfiles(nombre_completo)')
+        .eq('asilo_id', asiloActivoId)
+        .in('rol', ['monitor', 'anfitrion']);
+      
+      if (errMiembros) throw errMiembros;
+
+      // 2. Cargar códigos de invitación pendientes para monitores
+      const { data: codigosPendientes, error: errCodigos } = await supabase
+        .from('codigos_invitacion')
+        .select('*')
+        .eq('asilo_id', asiloActivoId)
+        .eq('rol_asignado', 'monitor')
+        .eq('usado', false);
+      
+      if (errCodigos) throw errCodigos;
+
+      // 3. Unificar ambos en un solo formato
+      const listaUnificada = [];
+
+      // Procesar activos
+      if (miembrosActivos) {
+        for (const m of miembrosActivos) {
+          const isAnfitrion = m.rol === 'anfitrion';
+          listaUnificada.push({
+            id: m.id,
+            nombre: m.perfiles?.nombre_completo || 'Usuario sin nombre',
+            estado: m.estado.charAt(0).toUpperCase() + m.estado.slice(1),
+            color: isAnfitrion ? 'var(--color-blue)' : 'var(--color-olive)',
+            rol: isAnfitrion ? 'Anfitrión' : 'Monitor',
+            bgRol: isAnfitrion ? 'var(--color-blue)' : 'var(--color-orange-dark)',
+            colorRol: 'var(--color-white)',
+            desc: isAnfitrion ? 'Acceso total y propietario del asilo' : 'Acceso según los permisos asignados por el anfitrión',
+            isPending: false
+          });
+        }
+      }
+
+      // Procesar invitaciones pendientes
+      if (codigosPendientes) {
+        for (const c of codigosPendientes) {
+          // Extraer permisos para mostrar
+          const p = c.permisos_predefinidos || {};
+          const isFullAdmin = p.ver_dashboard && p.gestionar_miembros && p.personalizacion && p.ver_reportes && p.moderar_chat;
+          
+          let expiraTexto = 'Sin fecha límite';
+          if (c.expira_en) {
+            const diasFaltantes = Math.ceil((new Date(c.expira_en).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+            expiraTexto = diasFaltantes > 0 ? `Vence en ${diasFaltantes} días` : 'Expirada';
+          }
+
+          listaUnificada.push({
+            id: c.id,
+            nombre: `Código: ${c.codigo}`,
+            estado: 'Pendiente',
+            color: 'var(--color-gray)',
+            rol: isFullAdmin ? 'Administrador' : 'Personalizado',
+            bgRol: 'var(--color-light-gray)',
+            colorRol: 'var(--color-text)',
+            desc: `Invitación en espera. ${expiraTexto}.`,
+            isPending: true
+          });
+        }
+      }
+
+      setPersonal(listaUnificada);
+    } catch (err) {
+      console.error('Error cargando personal:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function eliminarInvitacion(id: string) {
+    if (!window.confirm('¿Seguro que deseas cancelar esta invitación? El código ya no servirá.')) return;
+    
+    const { error } = await supabase.from('codigos_invitacion').delete().eq('id', id);
+    if (error) {
+      alert('Hubo un error al eliminar el código.');
+      console.error(error);
+    } else {
+      // Remover de la UI optimísticamente
+      setPersonal(prev => prev.filter(p => p.id !== id));
+    }
+  }
 
   return (
     <div
@@ -71,37 +167,66 @@ export default function MonitoresYPersonal() {
       </p>
 
       <h2 style={{ fontSize: '16px', color: 'var(--color-text)', margin: '0 0 16px 0', fontFamily: 'var(--font-title)' }}>
-        Personal activo ({personal.length})
+        Personal activo ({personal.filter(p => !p.isPending).length})
       </h2>
 
-      {/* Lista */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflowY: 'auto', marginBottom: '32px' }}>
-        {personal.map(p => (
-          <div key={p.id} style={{ backgroundColor: 'var(--color-white)', borderRadius: '16px', padding: '16px', border: '1px solid var(--color-light-gray)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '40px', height: '40px', backgroundColor: p.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', fontSize: '16px', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
-                  {p.nombre.charAt(0)}
+      {loading ? (
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--color-gray)' }}>
+          <i className="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflowY: 'auto', marginBottom: '32px' }}>
+          {personal.length === 0 && (
+            <p style={{ color: 'var(--color-gray)', textAlign: 'center', fontSize: '14px', marginTop: '24px' }}>
+              No hay monitores registrados aún.
+            </p>
+          )}
+
+          {personal.map(p => (
+            <div key={p.id} style={{ backgroundColor: 'var(--color-white)', borderRadius: '16px', padding: '16px', border: '1px solid var(--color-light-gray)', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', backgroundColor: p.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', fontSize: '16px', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
+                    {p.isPending ? <i className="fa-regular fa-clock"></i> : p.nombre.charAt(0)}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
+                      {p.nombre}
+                    </div>
+                    <div style={{ fontSize: '12px', color: p.isPending ? 'var(--color-orange-dark)' : 'var(--color-olive)' }}>
+                      {p.estado}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                    {p.nombre}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ backgroundColor: p.bgRol, color: p.colorRol || 'var(--color-white)', fontSize: '12px', fontWeight: 700, padding: '6px 12px', borderRadius: '999px' }}>
+                    {p.rol}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--color-olive)' }}>
-                    {p.estado}
-                  </div>
+                  {p.isPending && (
+                    <button
+                      onClick={() => eliminarInvitacion(p.id)}
+                      style={{
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-red, #dc2626)',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        fontSize: '16px'
+                      }}
+                    >
+                      <i className="fa-solid fa-trash"></i>
+                    </button>
+                  )}
                 </div>
               </div>
-              <div style={{ backgroundColor: p.bgRol, color: p.colorRol || 'var(--color-white)', fontSize: '12px', fontWeight: 700, padding: '6px 12px', borderRadius: '999px' }}>
-                {p.rol}
+              <div style={{ fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
+                {p.desc}
               </div>
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
-              {p.desc}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Sticky Button */}
       <div style={{ marginTop: 'auto' }}>
