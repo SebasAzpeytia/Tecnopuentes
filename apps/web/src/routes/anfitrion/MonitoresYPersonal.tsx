@@ -22,11 +22,27 @@ export default function MonitoresYPersonal() {
       // 1. Cargar miembros activos (Monitores y Anfitriones)
       const { data: miembrosActivos, error: errMiembros } = await supabase
         .from('asilo_miembros')
-        .select('*, perfiles(nombre_completo)')
+        .select('*')
         .eq('asilo_id', asiloActivoId)
         .in('rol', ['monitor', 'anfitrion']);
       
       if (errMiembros) throw errMiembros;
+
+      // Extraer los perfiles de los miembros activos (ya que no hay relación directa en SQL)
+      let perfilesMapa: Record<string, string> = {};
+      if (miembrosActivos && miembrosActivos.length > 0) {
+        const userIds = miembrosActivos.map(m => m.usuario_id);
+        const { data: perfilesData, error: errPerfiles } = await supabase
+          .from('perfiles')
+          .select('id, nombre_completo')
+          .in('id', userIds);
+          
+        if (!errPerfiles && perfilesData) {
+          perfilesData.forEach(p => {
+            perfilesMapa[p.id] = p.nombre_completo;
+          });
+        }
+      }
 
       // 2. Cargar códigos de invitación pendientes para monitores
       const { data: codigosPendientes, error: errCodigos } = await supabase
@@ -48,7 +64,7 @@ export default function MonitoresYPersonal() {
           listaUnificada.push({
             id: m.id,
             usuarioId: m.usuario_id,
-            nombre: m.perfiles?.nombre_completo || 'Usuario sin nombre',
+            nombre: perfilesMapa[m.usuario_id] || 'Usuario sin nombre',
             estado: m.estado.charAt(0).toUpperCase() + m.estado.slice(1),
             color: isAnfitrion ? 'var(--color-blue)' : 'var(--color-olive)',
             rol: isAnfitrion ? 'Anfitrión' : 'Monitor',
