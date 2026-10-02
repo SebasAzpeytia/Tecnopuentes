@@ -272,7 +272,6 @@ export default function MonitoresYPersonal() {
               </div>
               {p.isPending ? (
                 <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.6' }}>
-                  <li>Permisos: {p.rol}</li>
                   <li>Creado por: {p.creadorNombre}</li>
                 </ul>
               ) : (
