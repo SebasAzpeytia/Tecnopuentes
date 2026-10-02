@@ -28,14 +28,31 @@ export default function MonitoresYPersonal() {
       
       if (errMiembros) throw errMiembros;
 
-      // Extraer los perfiles de los miembros activos (ya que no hay relación directa en SQL)
+      // 2. Cargar TODOS los códigos de invitación pendientes
+      const { data: codigosPendientes, error: errCodigos } = await supabase
+        .from('codigos_invitacion')
+        .select('*')
+        .eq('asilo_id', asiloActivoId)
+        .eq('usado', false);
+      
+      if (errCodigos) throw errCodigos;
+
+      // 3. Extraer los perfiles de los miembros activos y creadores de códigos
       let perfilesMapa: Record<string, string> = {};
-      if (miembrosActivos && miembrosActivos.length > 0) {
-        const userIds = miembrosActivos.map(m => m.usuario_id);
+      const userIds = new Set<string>();
+      
+      if (miembrosActivos) {
+        miembrosActivos.forEach(m => userIds.add(m.usuario_id));
+      }
+      if (codigosPendientes) {
+        codigosPendientes.forEach(c => userIds.add(c.creado_por));
+      }
+
+      if (userIds.size > 0) {
         const { data: perfilesData, error: errPerfiles } = await supabase
           .from('perfiles')
           .select('id, nombre_completo')
-          .in('id', userIds);
+          .in('id', Array.from(userIds));
           
         if (!errPerfiles && perfilesData) {
           perfilesData.forEach(p => {
@@ -44,17 +61,7 @@ export default function MonitoresYPersonal() {
         }
       }
 
-      // 2. Cargar códigos de invitación pendientes para monitores
-      const { data: codigosPendientes, error: errCodigos } = await supabase
-        .from('codigos_invitacion')
-        .select('*')
-        .eq('asilo_id', asiloActivoId)
-        .eq('rol_asignado', 'monitor')
-        .eq('usado', false);
-      
-      if (errCodigos) throw errCodigos;
-
-      // 3. Unificar ambos en un solo formato
+      // 4. Unificar ambos en un solo formato
       const listaUnificada = [];
 
       // Procesar activos
@@ -79,25 +86,28 @@ export default function MonitoresYPersonal() {
       // Procesar invitaciones pendientes
       if (codigosPendientes) {
         for (const c of codigosPendientes) {
-          // Extraer permisos para mostrar
+          const isResidente = c.rol_asignado === 'residente';
           const p = c.permisos_predefinidos || {};
           const isFullAdmin = p.ver_dashboard && p.gestionar_miembros && p.personalizacion && p.ver_reportes && p.moderar_chat;
           
-          let expiraTexto = 'Sin fecha límite';
+          let rolTexto = isResidente ? 'Residente' : (isFullAdmin ? 'Administrador' : 'Personalizado');
+          let expiraTexto = 'Sin límite';
           if (c.expira_en) {
             const diasFaltantes = Math.ceil((new Date(c.expira_en).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-            expiraTexto = diasFaltantes > 0 ? `Vence en ${diasFaltantes} días` : 'Expirada';
+            expiraTexto = diasFaltantes > 0 ? `${diasFaltantes} días` : 'Expirada';
           }
+
+          const creadorNombre = perfilesMapa[c.creado_por] || 'Alguien';
 
           listaUnificada.push({
             id: c.id,
             nombre: `Código: ${c.codigo}`,
             estado: 'Pendiente',
             color: 'var(--color-gray)',
-            rol: isFullAdmin ? 'Administrador' : 'Personalizado',
+            rol: rolTexto,
             bgRol: 'var(--color-light-gray)',
             colorRol: 'var(--color-text)',
-            desc: `Invitación en espera. ${expiraTexto}.`,
+            desc: `Permisos: ${rolTexto} • Creado por: ${creadorNombre} • Vence en: ${expiraTexto}`,
             isPending: true
           });
         }
