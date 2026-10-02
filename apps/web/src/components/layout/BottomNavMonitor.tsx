@@ -9,6 +9,7 @@ export default function BottomNavMonitor() {
     { label: 'Miembros', path: '/panel/miembros', icon: 'fa-solid fa-user-group' },
     { label: 'Personalizar', path: '/panel/personalizar', icon: 'fa-solid fa-palette' },
     { label: 'Reportes', path: '/panel/reportes', icon: 'fa-solid fa-file-lines' },
+    { label: 'Perfil', path: '/panel/perfil', icon: 'fa-solid fa-user' },
   ];
 
   return (

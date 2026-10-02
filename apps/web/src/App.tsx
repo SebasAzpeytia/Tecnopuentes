@@ -30,6 +30,7 @@ import EditarIcono from '@/routes/anfitrion/EditarIcono';
 import Reportes from '@/routes/anfitrion/Reportes';
 import MonitoresYPersonal from '@/routes/anfitrion/MonitoresYPersonal';
 import InvitarMonitor from '@/routes/anfitrion/InvitarMonitor';
+import PerfilAnfitrion from '@/routes/anfitrion/PerfilAnfitrion';
 
 export default function App() {
   const { usuarioId, rolActivo, asiloActivoId, setSesion, limpiarSesion } = useSesionStore();
@@ -37,21 +38,19 @@ export default function App() {
 
   // Función para obtener asilo y rol
   const cargarDatosUsuario = async (userId: string) => {
-    setSesion({ usuarioId: userId });
-    
-    // Obtenemos el asilo y rol (si existe)
+    // Obtenemos el asilo y rol ANTES de actualizar la sesión para evitar redirecciones prematuras
     const { data: miembro } = await supabase
       .from('asilo_miembros')
       .select('asilo_id, rol')
       .eq('usuario_id', userId)
       .maybeSingle();
 
-    if (miembro) {
-      setSesion({ asiloActivoId: miembro.asilo_id, rolActivo: miembro.rol as any });
-    } else {
-      // Si no tiene asilo asignado todavía
-      setSesion({ asiloActivoId: null, rolActivo: null });
-    }
+    // Actualizamos TODO el estado de golpe
+    setSesion({ 
+      usuarioId: userId,
+      asiloActivoId: miembro ? miembro.asilo_id : null, 
+      rolActivo: miembro ? (miembro.rol as any) : null 
+    });
   };
 
   useEffect(() => {
@@ -124,6 +123,12 @@ export default function App() {
                 <Route path="/actividad" element={<Actividad />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/perfil" element={<Perfil />} />
+              </>
+            )}
+            
+            {/* Rutas Compartidas de Perfil (Disponibles para todos los roles) */}
+            {rolActivo !== null && (
+              <>
                 <Route path="/perfil/informacion" element={<MiInformacion />} />
                 <Route path="/perfil/contrasena" element={<CambiarContrasena />} />
                 <Route path="/perfil/notificaciones" element={<Notificaciones />} />
@@ -140,6 +145,7 @@ export default function App() {
                 <Route path="/panel/personalizar" element={<PersonalizarIconos />} />
                 <Route path="/panel/personalizar/editar" element={<EditarIcono />} />
                 <Route path="/panel/reportes" element={<Reportes />} />
+                <Route path="/panel/perfil" element={<PerfilAnfitrion />} />
               </>
             )}
 

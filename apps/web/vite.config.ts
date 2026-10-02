@@ -6,6 +6,9 @@ import path from 'path';
 // TODO: una vez que existan los íconos reales (ver public/icons/),
 // completar los tamaños en `manifest.icons` abajo.
 export default defineConfig({
+  server: {
+    host: true, // Esto le dice a Vite que escuche en 0.0.0.0
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
