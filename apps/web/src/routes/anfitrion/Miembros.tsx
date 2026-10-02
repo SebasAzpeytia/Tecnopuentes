@@ -72,14 +72,13 @@ export default function Miembros() {
             dbId: m.id,
             usuarioId: m.usuario_id,
             nombre: perfilesMapa[m.usuario_id] || 'Usuario sin nombre',
-            edad: null,
-            subtitulo: null,
-            iconoSub: null,
+            estado: 'Activo',
             color: isResidente ? 'var(--color-blue)' : (isAnfitrion ? 'var(--color-orange-dark)' : 'var(--color-olive)'),
-            infoDerecha: null, // Horas de juego, etc. (Mock por ahora)
+            rol: isResidente ? 'Residente' : (isAnfitrion ? 'Anfitrión' : 'Monitor'),
+            bgRol: isResidente ? 'var(--color-blue)' : (isAnfitrion ? 'var(--color-orange-dark)' : 'var(--color-olive)'),
+            colorRol: 'var(--color-white)',
+            desc: isResidente ? 'Miembro residente del asilo.' : (isAnfitrion ? 'Acceso total y propietario del asilo' : 'Acceso según permisos asignados'),
             tipo: isResidente ? 'Residente' : (isAnfitrion ? 'Anfitrión' : 'Monitor'),
-            badge: isAnfitrion ? 'Admin' : (isResidente ? null : 'Monitor'),
-            badgeBg: isAnfitrion ? 'var(--color-orange-dark)' : 'var(--color-olive)',
             isPending: false,
             rolDb: m.rol
           });
@@ -97,13 +96,14 @@ export default function Miembros() {
             id: c.id,
             dbId: c.id,
             nombre: `Código: ${c.codigo}`,
-            subtitulo: `Creado por ${perfilesMapa[c.creado_por] || 'Alguien'}`,
-            iconoSub: null,
+            estado: 'Pendiente',
             color: 'var(--color-gray)',
-            infoDerecha: expiraTexto,
+            rol: c.rol_asignado === 'residente' ? 'Residente' : 'Monitor',
+            bgRol: 'var(--color-light-gray)',
+            colorRol: 'var(--color-text)',
+            creadorNombre: perfilesMapa[c.creado_por] || 'Alguien',
+            expiraTexto: expiraTexto,
             tipo: 'Pendiente',
-            badge: c.rol_asignado === 'residente' ? 'Residente' : 'Monitor',
-            badgeBg: 'var(--color-light-gray)',
             isPending: true,
             rolDb: 'pendiente'
           });
@@ -262,52 +262,60 @@ export default function Miembros() {
             </p>
           )}
           {filtrados.map(m => (
-            <div key={m.id} style={{ backgroundColor: 'var(--color-white)', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--color-light-gray)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                <div style={{ width: '48px', height: '48px', backgroundColor: m.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-title)', flexShrink: 0 }}>
-                  {m.isPending ? <i className="fa-regular fa-clock"></i> : m.nombre.charAt(0)}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflow: 'hidden' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {m.nombre} {m.edad ? `• ${m.edad}` : ''}
+            <div key={m.id} style={{ backgroundColor: 'var(--color-white)', borderRadius: '16px', padding: '16px', border: '1px solid var(--color-light-gray)', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', backgroundColor: m.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', fontSize: '16px', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
+                    {m.isPending ? <i className="fa-regular fa-clock"></i> : m.nombre.charAt(0)}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--color-gray)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {m.iconoSub && <span>{m.iconoSub}</span>}
-                    {m.subtitulo}
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', marginBottom: m.isPending ? '4px' : '0' }}>
+                      {m.nombre}
+                    </div>
+                    {m.isPending && m.expiraTexto && (
+                      <div style={{ fontSize: '12px', color: 'var(--color-green, #16a34a)', fontWeight: 700, marginBottom: '2px' }}>
+                        Vence en: {m.expiraTexto}
+                      </div>
+                    )}
+                    <div style={{ fontSize: '12px', color: m.isPending ? 'var(--color-orange-dark)' : 'var(--color-olive)' }}>
+                      {m.estado}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '8px' }}>
-                {m.infoDerecha && (
-                  <span style={{ fontSize: '14px', fontWeight: 800, color: m.isPending ? 'var(--color-green)' : 'var(--color-blue)', fontFamily: 'var(--font-title)' }}>
-                    {m.infoDerecha}
-                  </span>
-                )}
-                {m.badge && (
-                  <div style={{ backgroundColor: m.badgeBg, color: m.isPending ? 'var(--color-text)' : 'var(--color-white)', fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '999px' }}>
-                    {m.badge}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ backgroundColor: m.bgRol, color: m.colorRol || 'var(--color-white)', fontSize: '12px', fontWeight: 700, padding: '6px 12px', borderRadius: '999px' }}>
+                    {m.rol}
                   </div>
-                )}
-                
-                {m.isPending ? (
-                  <button 
-                    onClick={() => eliminarPendiente(m.id)}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-red, #dc2626)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
-                  >
-                    <i className="fa-solid fa-trash"></i>
-                  </button>
-                ) : (
-                  m.usuarioId !== currentUsuarioId && (
+                  
+                  {m.isPending ? (
                     <button 
-                      onClick={() => abrirModal(m)}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-gray)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
+                      onClick={() => eliminarPendiente(m.id)}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-red, #dc2626)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
                     >
-                      <i className="fa-solid fa-ellipsis"></i>
+                      <i className="fa-solid fa-trash"></i>
                     </button>
-                  )
-                )}
+                  ) : (
+                    m.usuarioId !== currentUsuarioId && (
+                      <button 
+                        onClick={() => abrirModal(m)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-gray)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
+                      >
+                        <i className="fa-solid fa-ellipsis"></i>
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
+              {m.isPending ? (
+                <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.6' }}>
+                  <li>Creado por: {m.creadorNombre}</li>
+                </ul>
+              ) : (
+                <div style={{ fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
+                  {m.desc}
+                </div>
+              )}
             </div>
           ))}
         </div>
