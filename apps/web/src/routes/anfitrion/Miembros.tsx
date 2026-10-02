@@ -72,9 +72,9 @@ export default function Miembros() {
             dbId: m.id,
             usuarioId: m.usuario_id,
             nombre: perfilesMapa[m.usuario_id] || 'Usuario sin nombre',
-            edad: null, // Podría venir del perfil en un futuro
-            subtitulo: m.estado === 'activo' ? 'En línea' : 'Desconectado', // Mock
-            iconoSub: m.estado === 'activo' ? '🟢' : '⚪',
+            edad: null,
+            subtitulo: null,
+            iconoSub: null,
             color: isResidente ? 'var(--color-blue)' : (isAnfitrion ? 'var(--color-orange-dark)' : 'var(--color-olive)'),
             infoDerecha: null, // Horas de juego, etc. (Mock por ahora)
             tipo: isResidente ? 'Residente' : (isAnfitrion ? 'Anfitrión' : 'Monitor'),
@@ -98,7 +98,7 @@ export default function Miembros() {
             dbId: c.id,
             nombre: `Código: ${c.codigo}`,
             subtitulo: `Creado por ${perfilesMapa[c.creado_por] || 'Alguien'}`,
-            iconoSub: '⏳',
+            iconoSub: null,
             color: 'var(--color-gray)',
             infoDerecha: expiraTexto,
             tipo: 'Pendiente',
