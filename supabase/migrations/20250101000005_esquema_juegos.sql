@@ -1,19 +1,32 @@
--- Catálogo de Juegos
-CREATE TABLE public.juegos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    slug TEXT NOT NULL UNIQUE,
-    nombre TEXT NOT NULL,
-    icono TEXT,
-    creado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+-- 1. Actualizar la tabla de juegos que ya existía en schema_inicial
+ALTER TABLE public.juegos 
+ADD COLUMN IF NOT EXISTS icono TEXT,
+ADD COLUMN IF NOT EXISTS creado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL;
 
--- Habilitar RLS para juegos
+-- Asegurarnos de que el RLS esté activo
 ALTER TABLE public.juegos ENABLE ROW LEVEL SECURITY;
 
--- Todos pueden ver los juegos
-CREATE POLICY "Cualquier usuario autenticado puede ver los juegos"
-    ON public.juegos FOR SELECT
-    USING (auth.role() = 'authenticated');
+-- Asegurar que la política exista
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'juegos' AND policyname = 'Cualquier usuario autenticado puede ver los juegos'
+    ) THEN
+        CREATE POLICY "Cualquier usuario autenticado puede ver los juegos"
+            ON public.juegos FOR SELECT
+            USING (auth.role() = 'authenticated');
+    END IF;
+END
+$$;
+
+-- Actualizar los juegos existentes con sus íconos
+UPDATE public.juegos SET icono = 'fa-solid fa-border-all' WHERE slug = 'memorama';
+UPDATE public.juegos SET icono = 'fa-solid fa-clone' WHERE slug = 'solitario';
+INSERT INTO public.juegos (slug, nombre, icono) VALUES ('loteria', 'Lotería', 'fa-solid fa-table-cells') ON CONFLICT (slug) DO NOTHING;
+
+-- 2. Eliminar la tabla vieja 'sesiones_juego' (que no estaba normalizada)
+DROP TABLE IF EXISTS public.sesiones_juego CASCADE;
 
 
 -- Historial de Actividad (Partidas jugadas)
@@ -96,8 +109,4 @@ CREATE TRIGGER on_miembro_created
     EXECUTE FUNCTION public.inicializar_estadisticas();
 
 
--- Insertar juegos base
-INSERT INTO public.juegos (slug, nombre, icono) VALUES
-('memorama', 'Memorama', 'fa-solid fa-border-all'),
-('solitario', 'Solitario', 'fa-solid fa-clone'),
-('loteria', 'Lotería', 'fa-solid fa-table-cells');
+
