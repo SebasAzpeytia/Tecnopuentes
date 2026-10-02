@@ -308,9 +308,9 @@ export default function Miembros() {
                 </div>
               </div>
               {m.isPending ? (
-                <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.6' }}>
-                  <li>Creado por: {m.creadorNombre}</li>
-                </ul>
+                <div style={{ fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
+                  Creado por: {m.creadorNombre}
+                </div>
               ) : (
                 <div style={{ fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
                   {m.desc}
