@@ -36,38 +36,7 @@ export default function AgregarMiembro() {
     setPermisos(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // 1. Efecto de creación inicial
-  useEffect(() => {
-    async function crearCodigo() {
-      if (!asiloActivoId) return;
-      
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
-
-      const nuevoCodigo = generarCodigoAleatorio();
-      // Caduca en 7 días
-      const fechaExpiracion = new Date();
-      fechaExpiracion.setDate(fechaExpiracion.getDate() + 7);
-
-      const { data, error } = await supabase.from('codigos_invitacion').insert({
-        codigo: nuevoCodigo,
-        asilo_id: asiloActivoId,
-        rol_asignado: 'residente',
-        creado_por: userData.user.id,
-        expira_en: fechaExpiracion.toISOString(),
-      }).select().single();
-
-      if (error) {
-        console.error('Error al generar código:', error);
-      } else if (data) {
-        setCodigoData({ id: data.id, codigo: data.codigo });
-      }
-    }
-
-    crearCodigo();
-  }, [asiloActivoId]);
-
-  // 2. Efecto de actualización (cuando cambian los permisos/rol)
+  // 1. Efecto de actualización (cuando cambian los permisos/rol)
   useEffect(() => {
     // Evitamos actualizar en el primer render (cuando apenas se está creando)
     if (isFirstMount.current) {
@@ -108,6 +77,41 @@ export default function AgregarMiembro() {
     return () => clearTimeout(timer);
   }, [rol, nivelAcceso, permisos, expiracion, codigoData]);
 
+  async function generarCodigo() {
+    if (!asiloActivoId) return;
+    
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+
+    const nuevoCodigo = generarCodigoAleatorio();
+    
+    let fechaExpiracion = null;
+    if (expiracion !== 'never') {
+      fechaExpiracion = new Date();
+      fechaExpiracion.setDate(fechaExpiracion.getDate() + parseInt(expiracion));
+    }
+
+    const permisosAEnviar = rol === 'Monitor' 
+      ? (nivelAcceso === 'Admin' 
+          ? { ver_dashboard: true, gestionar_miembros: true, personalizacion: true, ver_reportes: true, moderar_chat: true } 
+          : permisos)
+      : null;
+
+    const { data, error } = await supabase.from('codigos_invitacion').insert({
+      codigo: nuevoCodigo,
+      asilo_id: asiloActivoId,
+      rol_asignado: rol.toLowerCase(),
+      permisos_predefinidos: permisosAEnviar,
+      creado_por: userData.user.id,
+      expira_en: fechaExpiracion ? fechaExpiracion.toISOString() : null,
+    }).select().single();
+
+    if (error) {
+      console.error('Error al generar código:', error);
+    } else if (data) {
+      setCodigoData({ id: data.id, codigo: data.codigo });
+    }
+  }
 
   const copiarAlPortapapeles = async () => {
     if (!codigoData) return;
@@ -296,9 +300,9 @@ export default function AgregarMiembro() {
               {codigoData.codigo}
             </h2>
           ) : (
-            <h2 style={{ fontSize: '24px', color: 'var(--color-gray)', margin: '12px 0 20px 0' }}>
-              <i className="fa-solid fa-circle-notch fa-spin"></i> Cargando...
-            </h2>
+            <p style={{ fontSize: '14px', color: 'var(--color-gray)', margin: '20px 0' }}>
+              Configura las opciones y presiona "Generar invitación".
+            </p>
           )}
           
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -329,23 +333,32 @@ export default function AgregarMiembro() {
 
       {/* Botones de acción */}
       <div style={{ display: 'flex', gap: '16px', marginTop: '16px', flexShrink: 0 }}>
-        <button 
-          onClick={copiarAlPortapapeles}
-          disabled={!codigoData}
-          style={{ flex: 1, padding: '16px', backgroundColor: copiado ? 'var(--color-green)' : 'var(--color-blue)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '14px', fontWeight: 700, cursor: codigoData ? 'pointer' : 'not-allowed', boxShadow: '0 4px 10px rgba(29, 69, 158, 0.3)', transition: 'all 0.3s', opacity: codigoData ? 1 : 0.5 }}
-        >
-          {copiado ? (
-            <><i className="fa-solid fa-check"></i> ¡Copiado!</>
-          ) : (
-            'Copiar código'
-          )}
-        </button>
-        <button 
-          disabled={!codigoData}
-          style={{ flex: 1, padding: '16px', backgroundColor: 'var(--color-white)', border: '2px solid var(--color-orange-dark)', color: 'var(--color-orange-dark)', borderRadius: '999px', fontSize: '14px', fontWeight: 700, cursor: codigoData ? 'pointer' : 'not-allowed', opacity: codigoData ? 1 : 0.5 }}
-        >
-          Compartir
-        </button>
+        {!codigoData ? (
+          <button 
+            onClick={generarCodigo}
+            style={{ flex: 1, padding: '16px', backgroundColor: 'var(--color-blue)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(29, 69, 158, 0.3)', transition: 'all 0.3s' }}
+          >
+            Generar invitación
+          </button>
+        ) : (
+          <>
+            <button 
+              onClick={copiarAlPortapapeles}
+              style={{ flex: 1, padding: '16px', backgroundColor: copiado ? 'var(--color-green)' : 'var(--color-blue)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(29, 69, 158, 0.3)', transition: 'all 0.3s' }}
+            >
+              {copiado ? (
+                <><i className="fa-solid fa-check"></i> ¡Copiado!</>
+              ) : (
+                'Copiar código'
+              )}
+            </button>
+            <button 
+              style={{ flex: 1, padding: '16px', backgroundColor: 'var(--color-white)', border: '2px solid var(--color-orange-dark)', color: 'var(--color-orange-dark)', borderRadius: '999px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Compartir
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

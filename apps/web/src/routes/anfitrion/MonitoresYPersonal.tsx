@@ -6,6 +6,7 @@ import { useSesionStore } from '@/state/useSesionStore';
 export default function MonitoresYPersonal() {
   const navigate = useNavigate();
   const asiloActivoId = useSesionStore(state => state.asiloActivoId);
+  const currentUsuarioId = useSesionStore(state => state.usuarioId);
   const [personal, setPersonal] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,6 +47,7 @@ export default function MonitoresYPersonal() {
           const isAnfitrion = m.rol === 'anfitrion';
           listaUnificada.push({
             id: m.id,
+            usuarioId: m.usuario_id,
             nombre: m.perfiles?.nombre_completo || 'Usuario sin nombre',
             estado: m.estado.charAt(0).toUpperCase() + m.estado.slice(1),
             color: isAnfitrion ? 'var(--color-blue)' : 'var(--color-olive)',
@@ -102,6 +104,18 @@ export default function MonitoresYPersonal() {
       console.error(error);
     } else {
       // Remover de la UI optimísticamente
+      setPersonal(prev => prev.filter(p => p.id !== id));
+    }
+  }
+
+  async function expulsarMiembro(id: string, nombre: string) {
+    if (!window.confirm(`¿Seguro que deseas expulsar a ${nombre} del asilo? Perderá acceso inmediatamente.`)) return;
+    
+    const { error } = await supabase.from('asilo_miembros').delete().eq('id', id);
+    if (error) {
+      alert('Hubo un error al expulsar al miembro.');
+      console.error(error);
+    } else {
       setPersonal(prev => prev.filter(p => p.id !== id));
     }
   }
@@ -203,19 +217,22 @@ export default function MonitoresYPersonal() {
                   <div style={{ backgroundColor: p.bgRol, color: p.colorRol || 'var(--color-white)', fontSize: '12px', fontWeight: 700, padding: '6px 12px', borderRadius: '999px' }}>
                     {p.rol}
                   </div>
+                  
                   {p.isPending && (
                     <button
                       onClick={() => eliminarInvitacion(p.id)}
-                      style={{
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        color: 'var(--color-red, #dc2626)',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        fontSize: '16px'
-                      }}
+                      style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--color-red, #dc2626)', cursor: 'pointer', padding: '4px', fontSize: '16px' }}
                     >
                       <i className="fa-solid fa-trash"></i>
+                    </button>
+                  )}
+
+                  {!p.isPending && p.usuarioId !== currentUsuarioId && (
+                    <button
+                      onClick={() => expulsarMiembro(p.id, p.nombre)}
+                      style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--color-red, #dc2626)', cursor: 'pointer', padding: '4px', fontSize: '16px' }}
+                    >
+                      <i className="fa-solid fa-user-xmark"></i>
                     </button>
                   )}
                 </div>
