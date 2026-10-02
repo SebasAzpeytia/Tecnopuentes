@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import BottomNavMonitor from '@/components/layout/BottomNavMonitor';
 import { supabase } from '@/lib/supabaseClient';
 import { useSesionStore } from '@/state/useSesionStore';
+import ModalBase from '@/components/ui/ModalBase';
+import ModalConfirmacion from '@/components/ui/ModalConfirmacion';
 
 export default function Miembros() {
   const navigate = useNavigate();
@@ -12,6 +14,8 @@ export default function Miembros() {
   const [filtroActivo, setFiltroActivo] = useState('Todos');
   const [mostrarModalExpulsar, setMostrarModalExpulsar] = useState(false);
   const [miembroAExpulsar, setMiembroAExpulsar] = useState<any>(null);
+  const [mostrarModalEliminarInv, setMostrarModalEliminarInv] = useState(false);
+  const [invitacionAEliminar, setInvitacionAEliminar] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
   
   const [loading, setLoading] = useState(true);
@@ -123,11 +127,17 @@ export default function Miembros() {
     setMostrarModalExpulsar(true);
   };
 
-  const eliminarPendiente = async (id: string) => {
-    if (!window.confirm('¿Seguro que deseas cancelar esta invitación?')) return;
-    const { error } = await supabase.from('codigos_invitacion').delete().eq('id', id);
+  const confirmarEliminarPendiente = (id: string) => {
+    setInvitacionAEliminar(id);
+    setMostrarModalEliminarInv(true);
+  };
+
+  const ejecutarEliminarPendiente = async () => {
+    if (!invitacionAEliminar) return;
+    const { error } = await supabase.from('codigos_invitacion').delete().eq('id', invitacionAEliminar);
     if (!error) {
-      setMiembrosDB(prev => prev.filter(m => m.id !== id));
+      setMiembrosDB(prev => prev.filter(m => m.id !== invitacionAEliminar));
+      setMostrarModalEliminarInv(false);
     }
   };
 
@@ -290,7 +300,7 @@ export default function Miembros() {
                   
                   {m.isPending ? (
                     <button 
-                      onClick={() => eliminarPendiente(m.id)}
+                      onClick={() => confirmarEliminarPendiente(m.id)}
                       style={{ background: 'none', border: 'none', color: 'var(--color-red, #dc2626)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
                     >
                       <i className="fa-solid fa-trash"></i>
@@ -323,25 +333,17 @@ export default function Miembros() {
 
       <BottomNavMonitor />
 
-      {/* Modal Expulsar */}
-      {mostrarModalExpulsar && miembroAExpulsar && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(38, 38, 38, 0.95)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '24px', zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'var(--color-white)',
-            borderRadius: '32px',
-            padding: '32px 24px',
-            width: '100%',
-            maxWidth: '340px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            textAlign: 'center'
-          }}>
+      <ModalConfirmacion
+        isOpen={mostrarModalEliminarInv}
+        onClose={() => setMostrarModalEliminarInv(false)}
+        onConfirm={ejecutarEliminarPendiente}
+        titulo="¿Cancelar Invitación?"
+        mensaje="Este código quedará invalidado y ya nadie podrá unirse con él."
+      />
+
+      <ModalBase isOpen={mostrarModalExpulsar} onClose={() => setMostrarModalExpulsar(false)}>
+        {miembroAExpulsar && (
+          <>
             <div style={{ width: '64px', height: '64px', backgroundColor: miembroAExpulsar.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700, color: 'var(--color-white)', fontFamily: 'var(--font-title)', marginBottom: '24px' }}>
               {miembroAExpulsar.nombre.charAt(0)}
             </div>
@@ -363,9 +365,9 @@ export default function Miembros() {
             >
               Cancelar
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </ModalBase>
     </div>
   );
 }
