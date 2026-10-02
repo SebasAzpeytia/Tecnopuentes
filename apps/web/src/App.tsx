@@ -29,7 +29,6 @@ import PersonalizarIconos from '@/routes/anfitrion/PersonalizarIconos';
 import EditarIcono from '@/routes/anfitrion/EditarIcono';
 import Reportes from '@/routes/anfitrion/Reportes';
 import MonitoresYPersonal from '@/routes/anfitrion/MonitoresYPersonal';
-import InvitarMonitor from '@/routes/anfitrion/InvitarMonitor';
 import PerfilAnfitrion from '@/routes/anfitrion/PerfilAnfitrion';
 
 export default function App() {
@@ -153,7 +152,6 @@ export default function App() {
             {rolActivo === 'anfitrion' && (
               <>
                 <Route path="/panel/monitores" element={<MonitoresYPersonal />} />
-                <Route path="/panel/invitar-monitor" element={<InvitarMonitor />} />
               </>
             )}
             

@@ -46,7 +46,7 @@ export default function MonitoresYPersonal() {
           Monitores y personal
         </h1>
         <button
-          onClick={() => navigate('/panel/invitar-monitor')}
+          onClick={() => navigate('/panel/agregar-miembro')}
           style={{
             width: '40px',
             height: '40px',
@@ -106,7 +106,7 @@ export default function MonitoresYPersonal() {
       {/* Sticky Button */}
       <div style={{ marginTop: 'auto' }}>
         <button
-          onClick={() => navigate('/panel/invitar-monitor')}
+          onClick={() => navigate('/panel/agregar-miembro')}
           style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(244, 92, 25, 0.3)' }}
         >
           Invitar nuevo monitor
