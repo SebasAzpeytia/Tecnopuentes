@@ -1,12 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNavMonitor from '@/components/layout/BottomNavMonitor';
 import { useSesionStore } from '@/state/useSesionStore';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function Panel() {
   const navigate = useNavigate();
-  const { rolActivo } = useSesionStore();
+  const { rolActivo, asiloActivoId } = useSesionStore();
   const [nombreAsilo, setNombreAsilo] = useState('Asilo Los Álamos'); // Mock V1
+  
+  const [residentesDB, setResidentesDB] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarResidentes();
+  }, [asiloActivoId]);
+
+  async function cargarResidentes() {
+    if (!asiloActivoId) return;
+    setLoading(true);
+
+    const { data: miembrosActivos, error } = await supabase
+      .from('asilo_miembros')
+      .select('usuario_id')
+      .eq('asilo_id', asiloActivoId)
+      .eq('rol', 'residente');
+
+    if (error || !miembrosActivos || miembrosActivos.length === 0) {
+      setResidentesDB([]);
+      setLoading(false);
+      return;
+    }
+
+    const usuarioIds = miembrosActivos.map((m: any) => m.usuario_id);
+
+    const { data: perfiles } = await supabase
+      .from('perfiles')
+      .select('id, nombre_completo, avatar_url')
+      .in('id', usuarioIds);
+
+    const perfilesMapa: Record<string, string> = {};
+    if (perfiles) {
+      perfiles.forEach((p: any) => {
+        perfilesMapa[p.id] = p.nombre_completo;
+      });
+    }
+
+    const paleta = ['var(--color-orange)', 'var(--color-blue)', 'var(--color-olive)', 'var(--color-blue-light)', 'var(--color-peach)'];
+    const favs = ['Lotería', 'Memorama', 'Solitario', 'Ajedrez', 'Trivia'];
+    const tiempos = ['6.2 h', '5.4 h', '4.1 h', '2.8 h', '1.3 h'];
+
+    const lista = miembrosActivos.map((m, index) => {
+      const nombreReal = perfilesMapa[m.usuario_id] || 'Residente';
+      return {
+        id: m.usuario_id,
+        nombre: nombreReal,
+        edad: Math.floor(Math.random() * (90 - 70 + 1)) + 70, // Mock edad
+        favorito: favs[index % favs.length],
+        tiempo: tiempos[index % tiempos.length],
+        color: paleta[index % paleta.length]
+      };
+    });
+
+    setResidentesDB(lista);
+    setLoading(false);
+  }
 
   const resumen = [
     { valor: '28', etiqueta: 'Residentes activos', color: 'var(--color-blue)', bg: '#e8f0fe', border: 'var(--color-blue-light)' },
@@ -14,13 +72,7 @@ export default function Panel() {
     { valor: 'Lotería', etiqueta: 'Juego más jugado', color: 'var(--color-olive)', bg: '#f1f8e9', border: '#c5e1a5' },
   ];
 
-  const miembros = [
-    { id: 1, nombre: 'María G.', edad: 78, favorito: 'Lotería', tiempo: '6.2 h', color: 'var(--color-orange)' },
-    { id: 2, nombre: 'José R.', edad: 82, favorito: 'Memorama', tiempo: '5.4 h', color: 'var(--color-blue)' },
-    { id: 3, nombre: 'Carmen T.', edad: 75, favorito: 'Solitario', tiempo: '4.1 h', color: 'var(--color-olive)' },
-    { id: 4, nombre: 'Luis P.', edad: 80, favorito: 'Ajedrez', tiempo: '2.8 h', color: 'var(--color-blue-light)' },
-    { id: 5, nombre: 'Ana M.', edad: 73, favorito: 'Trivia', tiempo: '1.3 h', color: 'var(--color-peach)' },
-  ];
+
 
   return (
     <div
@@ -127,26 +179,36 @@ export default function Panel() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {miembros.map((m) => (
-            <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: '48px', height: '48px', backgroundColor: m.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
-                  {m.nombre.charAt(0)}
-                </div>
-                <div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                    {m.nombre}, {m.edad}
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'var(--color-gray)' }}>
-                    Favorito: {m.favorito}
-                  </div>
-                </div>
-              </div>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-blue)', fontFamily: 'var(--font-title)' }}>
-                {m.tiempo}
-              </div>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px', color: 'var(--color-gray)' }}>
+              <i className="fa-solid fa-circle-notch fa-spin fa-2x"></i>
             </div>
-          ))}
+          ) : residentesDB.length === 0 ? (
+            <p style={{ color: 'var(--color-gray)', textAlign: 'center', fontSize: '14px' }}>
+              No hay residentes registrados aún.
+            </p>
+          ) : (
+            residentesDB.map((m) => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '48px', height: '48px', backgroundColor: m.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
+                    {m.nombre.charAt(0)}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
+                      {m.nombre}, {m.edad}
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-gray)' }}>
+                      Favorito: {m.favorito}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-blue)', fontFamily: 'var(--font-title)' }}>
+                  {m.tiempo}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
