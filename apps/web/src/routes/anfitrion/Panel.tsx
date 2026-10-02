@@ -22,7 +22,7 @@ export default function Panel() {
 
     const { data: miembrosActivos, error } = await supabase
       .from('asilo_miembros')
-      .select('usuario_id')
+      .select('usuario_id, edad')
       .eq('asilo_id', asiloActivoId)
       .eq('rol', 'residente');
 
@@ -55,7 +55,7 @@ export default function Panel() {
       return {
         id: m.usuario_id,
         nombre: nombreReal,
-        edad: Math.floor(Math.random() * (90 - 70 + 1)) + 70, // Mock edad
+        edad: m.edad || '?', // Edad real o signo de interrogación
         favorito: favs[index % favs.length],
         tiempo: tiempos[index % tiempos.length],
         color: paleta[index % paleta.length]
