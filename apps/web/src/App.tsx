@@ -28,7 +28,6 @@ import AgregarMiembro from '@/routes/anfitrion/AgregarMiembro';
 import PersonalizarIconos from '@/routes/anfitrion/PersonalizarIconos';
 import EditarIcono from '@/routes/anfitrion/EditarIcono';
 import Reportes from '@/routes/anfitrion/Reportes';
-import MonitoresYPersonal from '@/routes/anfitrion/MonitoresYPersonal';
 import PerfilAnfitrion from '@/routes/anfitrion/PerfilAnfitrion';
 
 export default function App() {
@@ -148,13 +147,7 @@ export default function App() {
               </>
             )}
 
-            {/* Rutas EXCLUSIVAS del ANFITRIÓN */}
-            {rolActivo === 'anfitrion' && (
-              <>
-                <Route path="/panel/monitores" element={<MonitoresYPersonal />} />
-              </>
-            )}
-            
+
             {/* Guard route: cualquier URL inválida o rol incorrecto lo redirige a su home */}
             <Route path="*" element={<Navigate to={getHomeRoute()} replace />} />
           </>

@@ -46,7 +46,7 @@ export default function Reportes() {
         </div>
         {rolActivo === 'anfitrion' && (
           <button
-            onClick={() => navigate('/panel/monitores')}
+            onClick={() => navigate('/panel/miembros')}
             style={{
               width: '40px',
               height: '40px',
