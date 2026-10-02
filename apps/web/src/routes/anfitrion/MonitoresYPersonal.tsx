@@ -107,7 +107,9 @@ export default function MonitoresYPersonal() {
             rol: rolTexto,
             bgRol: 'var(--color-light-gray)',
             colorRol: 'var(--color-text)',
-            desc: `Permisos: ${rolTexto} • Creado por: ${creadorNombre} • Vence en: ${expiraTexto}`,
+            desc: '', // No usamos string simple para los pendientes
+            creadorNombre: creadorNombre,
+            expiraTexto: expiraTexto,
             isPending: true
           });
         }
@@ -230,9 +232,14 @@ export default function MonitoresYPersonal() {
                     {p.isPending ? <i className="fa-regular fa-clock"></i> : p.nombre.charAt(0)}
                   </div>
                   <div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', marginBottom: p.isPending ? '4px' : '0' }}>
                       {p.nombre}
                     </div>
+                    {p.isPending && p.expiraTexto && (
+                      <div style={{ fontSize: '12px', color: 'var(--color-green, #16a34a)', fontWeight: 700, marginBottom: '2px' }}>
+                        Vence en: {p.expiraTexto}
+                      </div>
+                    )}
                     <div style={{ fontSize: '12px', color: p.isPending ? 'var(--color-orange-dark)' : 'var(--color-olive)' }}>
                       {p.estado}
                     </div>
@@ -263,9 +270,16 @@ export default function MonitoresYPersonal() {
                   )}
                 </div>
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
-                {p.desc}
-              </div>
+              {p.isPending ? (
+                <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.6' }}>
+                  <li>Permisos: {p.rol}</li>
+                  <li>Creado por: {p.creadorNombre}</li>
+                </ul>
+              ) : (
+                <div style={{ fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.4' }}>
+                  {p.desc}
+                </div>
+              )}
             </div>
           ))}
         </div>
