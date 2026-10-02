@@ -1,33 +1,171 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNavMonitor from '@/components/layout/BottomNavMonitor';
+import { supabase } from '@/lib/supabaseClient';
+import { useSesionStore } from '@/state/useSesionStore';
 
 export default function Miembros() {
   const navigate = useNavigate();
+  const asiloActivoId = useSesionStore(state => state.asiloActivoId);
+  const currentUsuarioId = useSesionStore(state => state.usuarioId);
+
   const [filtroActivo, setFiltroActivo] = useState('Todos');
   const [mostrarModalExpulsar, setMostrarModalExpulsar] = useState(false);
   const [miembroAExpulsar, setMiembroAExpulsar] = useState<any>(null);
+  const [busqueda, setBusqueda] = useState('');
+  
+  const [loading, setLoading] = useState(true);
+  const [miembrosDB, setMiembrosDB] = useState<any[]>([]);
 
-  const filtros = [
-    { label: 'Todos 32', value: 'Todos' },
-    { label: 'Residentes', value: 'Residentes' },
-    { label: 'Monitores', value: 'Monitores' },
-    { label: 'Pendientes', value: 'Pendientes' },
-  ];
+  useEffect(() => {
+    cargarDatos();
+  }, [asiloActivoId]);
 
-  const miembros = [
-    { id: 1, nombre: 'María G.', edad: '78', subtitulo: 'En línea', iconoSub: '🟢', color: 'var(--color-orange)', infoDerecha: '6.2 h', tipo: 'Residente' },
-    { id: 2, nombre: 'José R.', edad: '82', subtitulo: 'En línea', iconoSub: '🟢', color: 'var(--color-blue)', infoDerecha: '5.4 h', tipo: 'Residente' },
-    { id: 3, nombre: 'Carmen T.', edad: '75', subtitulo: 'Sin actividad hace 6 días', iconoSub: '⚠️', subtituloColor: 'var(--color-orange-dark)', color: 'var(--color-olive)', infoDerecha: '0.4 h', tipo: 'Residente' },
-    { id: 4, nombre: 'Rosa Delgado', rol: 'Monitor • Administrador', color: 'var(--color-blue)', badge: 'Admin', badgeBg: 'var(--color-blue)', tipo: 'Monitor' },
-    { id: 5, nombre: 'Pedro Sánchez', rol: 'Monitor • Personalizado', color: 'var(--color-orange-dark)', badge: 'Monitor', badgeBg: 'var(--color-orange-dark)', tipo: 'Monitor' },
-    { id: 6, nombre: 'Tomás Vidal', rol: 'Invitación pendiente de aceptar', color: 'var(--color-blue-light)', badge: 'Pendiente', badgeBg: 'var(--color-blue-light)', tipo: 'Pendiente' },
-  ];
+  async function cargarDatos() {
+    if (!asiloActivoId) return;
+    setLoading(true);
+
+    try {
+      // 1. Miembros activos (todos los roles)
+      const { data: miembrosActivos, error: errMiembros } = await supabase
+        .from('asilo_miembros')
+        .select('*')
+        .eq('asilo_id', asiloActivoId);
+      
+      if (errMiembros) throw errMiembros;
+
+      // 2. Invitaciones pendientes
+      const { data: codigosPendientes, error: errCodigos } = await supabase
+        .from('codigos_invitacion')
+        .select('*')
+        .eq('asilo_id', asiloActivoId)
+        .eq('usado', false);
+      
+      if (errCodigos) throw errCodigos;
+
+      // 3. Perfiles
+      let perfilesMapa: Record<string, string> = {};
+      const userIds = new Set<string>();
+      if (miembrosActivos) miembrosActivos.forEach(m => userIds.add(m.usuario_id));
+      if (codigosPendientes) codigosPendientes.forEach(c => userIds.add(c.creado_por));
+
+      if (userIds.size > 0) {
+        const { data: perfilesData, error: errPerfiles } = await supabase
+          .from('perfiles')
+          .select('id, nombre_completo')
+          .in('id', Array.from(userIds));
+          
+        if (!errPerfiles && perfilesData) {
+          perfilesData.forEach(p => { perfilesMapa[p.id] = p.nombre_completo; });
+        }
+      }
+
+      // 4. Mapear a formato UI
+      const listaUnificada = [];
+
+      if (miembrosActivos) {
+        for (const m of miembrosActivos) {
+          const isResidente = m.rol === 'residente';
+          const isAnfitrion = m.rol === 'anfitrion';
+          listaUnificada.push({
+            id: m.id,
+            dbId: m.id,
+            usuarioId: m.usuario_id,
+            nombre: perfilesMapa[m.usuario_id] || 'Usuario sin nombre',
+            edad: null, // Podría venir del perfil en un futuro
+            subtitulo: m.estado === 'activo' ? 'En línea' : 'Desconectado', // Mock
+            iconoSub: m.estado === 'activo' ? '🟢' : '⚪',
+            color: isResidente ? 'var(--color-blue)' : (isAnfitrion ? 'var(--color-orange-dark)' : 'var(--color-olive)'),
+            infoDerecha: null, // Horas de juego, etc. (Mock por ahora)
+            tipo: isResidente ? 'Residente' : (isAnfitrion ? 'Anfitrión' : 'Monitor'),
+            badge: isAnfitrion ? 'Admin' : (isResidente ? null : 'Monitor'),
+            badgeBg: isAnfitrion ? 'var(--color-orange-dark)' : 'var(--color-olive)',
+            isPending: false,
+            rolDb: m.rol
+          });
+        }
+      }
+
+      if (codigosPendientes) {
+        for (const c of codigosPendientes) {
+          let expiraTexto = 'Sin límite';
+          if (c.expira_en) {
+            const diasFaltantes = Math.ceil((new Date(c.expira_en).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+            expiraTexto = diasFaltantes > 0 ? `${diasFaltantes}d` : 'Exp';
+          }
+          listaUnificada.push({
+            id: c.id,
+            dbId: c.id,
+            nombre: `Código: ${c.codigo}`,
+            subtitulo: `Creado por ${perfilesMapa[c.creado_por] || 'Alguien'}`,
+            iconoSub: '⏳',
+            color: 'var(--color-gray)',
+            infoDerecha: expiraTexto,
+            tipo: 'Pendiente',
+            badge: c.rol_asignado === 'residente' ? 'Residente' : 'Monitor',
+            badgeBg: 'var(--color-light-gray)',
+            isPending: true,
+            rolDb: 'pendiente'
+          });
+        }
+      }
+
+      setMiembrosDB(listaUnificada);
+    } catch (err) {
+      console.error('Error cargando miembros:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const abrirModal = (miembro: any) => {
     setMiembroAExpulsar(miembro);
     setMostrarModalExpulsar(true);
   };
+
+  const eliminarPendiente = async (id: string) => {
+    if (!window.confirm('¿Seguro que deseas cancelar esta invitación?')) return;
+    const { error } = await supabase.from('codigos_invitacion').delete().eq('id', id);
+    if (!error) {
+      setMiembrosDB(prev => prev.filter(m => m.id !== id));
+    }
+  };
+
+  const ejecutarExpulsion = async () => {
+    if (!miembroAExpulsar) return;
+    const { error } = await supabase.from('asilo_miembros').delete().eq('id', miembroAExpulsar.dbId);
+    if (!error) {
+      setMiembrosDB(prev => prev.filter(m => m.id !== miembroAExpulsar.id));
+      setMostrarModalExpulsar(false);
+    } else {
+      alert('Error al expulsar');
+    }
+  };
+
+  // Filtrado y búsqueda
+  let filtrados = miembrosDB;
+  if (filtroActivo === 'Residentes') filtrados = filtrados.filter(m => m.tipo === 'Residente');
+  if (filtroActivo === 'Monitores') filtrados = filtrados.filter(m => m.tipo === 'Monitor' || m.tipo === 'Anfitrión');
+  if (filtroActivo === 'Pendientes') filtrados = filtrados.filter(m => m.tipo === 'Pendiente');
+  
+  if (busqueda) {
+    filtrados = filtrados.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+  }
+
+  // Contadores
+  const contadores = {
+    Todos: miembrosDB.length,
+    Residentes: miembrosDB.filter(m => m.tipo === 'Residente').length,
+    Monitores: miembrosDB.filter(m => m.tipo === 'Monitor' || m.tipo === 'Anfitrión').length,
+    Pendientes: miembrosDB.filter(m => m.tipo === 'Pendiente').length
+  };
+
+  const filtros = [
+    { label: `Todos ${contadores.Todos}`, value: 'Todos' },
+    { label: `Residentes ${contadores.Residentes}`, value: 'Residentes' },
+    { label: `Monitores ${contadores.Monitores}`, value: 'Monitores' },
+    { label: `Pendientes ${contadores.Pendientes}`, value: 'Pendientes' },
+  ];
 
   return (
     <div
@@ -49,7 +187,7 @@ export default function Miembros() {
             Miembros
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--color-gray)', margin: 0 }}>
-            28 residentes • 4 monitores
+            Centro de control del asilo
           </p>
         </div>
         <button
@@ -79,7 +217,9 @@ export default function Miembros() {
           <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-gray)' }}></i>
           <input
             type="text"
-            placeholder="Buscar por nombre..."
+            placeholder="Buscar por nombre o código..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
             style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '999px', border: '1px solid var(--color-light-gray)', outline: 'none', fontSize: '14px', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
           />
         </div>
@@ -101,6 +241,7 @@ export default function Miembros() {
               fontWeight: 700,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              transition: 'all 0.2s'
             }}
           >
             {f.label}
@@ -109,45 +250,68 @@ export default function Miembros() {
       </div>
 
       {/* Lista */}
-      <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, overflowY: 'auto' }}>
-        {miembros.map(m => (
-          <div key={m.id} style={{ backgroundColor: 'var(--color-white)', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--color-light-gray)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', backgroundColor: m.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-title)', flexShrink: 0 }}>
-                {m.nombre.charAt(0)}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                  {m.nombre} {m.edad ? `• ${m.edad}` : ''}
+      {loading ? (
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--color-gray)' }}>
+          <i className="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+        </div>
+      ) : (
+        <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, overflowY: 'auto' }}>
+          {filtrados.length === 0 && (
+            <p style={{ color: 'var(--color-gray)', textAlign: 'center', fontSize: '14px', marginTop: '24px' }}>
+              No se encontraron resultados.
+            </p>
+          )}
+          {filtrados.map(m => (
+            <div key={m.id} style={{ backgroundColor: 'var(--color-white)', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--color-light-gray)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                <div style={{ width: '48px', height: '48px', backgroundColor: m.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-title)', flexShrink: 0 }}>
+                  {m.isPending ? <i className="fa-regular fa-clock"></i> : m.nombre.charAt(0)}
                 </div>
-                <div style={{ fontSize: '12px', color: m.subtituloColor || 'var(--color-gray)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {m.iconoSub && <span>{m.iconoSub}</span>}
-                  {m.subtitulo || m.rol}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflow: 'hidden' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {m.nombre} {m.edad ? `• ${m.edad}` : ''}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-gray)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {m.iconoSub && <span>{m.iconoSub}</span>}
+                    {m.subtitulo}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {m.infoDerecha && (
-                <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-blue)', fontFamily: 'var(--font-title)' }}>
-                  {m.infoDerecha}
-                </span>
-              )}
-              {m.badge && (
-                <div style={{ backgroundColor: m.badgeBg, color: 'var(--color-white)', fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '999px' }}>
-                  {m.badge}
-                </div>
-              )}
-              <button 
-                onClick={() => abrirModal(m)}
-                style={{ background: 'none', border: 'none', color: 'var(--color-gray)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
-              >
-                <i className="fa-solid fa-ellipsis"></i>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '8px' }}>
+                {m.infoDerecha && (
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: m.isPending ? 'var(--color-green)' : 'var(--color-blue)', fontFamily: 'var(--font-title)' }}>
+                    {m.infoDerecha}
+                  </span>
+                )}
+                {m.badge && (
+                  <div style={{ backgroundColor: m.badgeBg, color: m.isPending ? 'var(--color-text)' : 'var(--color-white)', fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '999px' }}>
+                    {m.badge}
+                  </div>
+                )}
+                
+                {m.isPending ? (
+                  <button 
+                    onClick={() => eliminarPendiente(m.id)}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-red, #dc2626)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
+                  >
+                    <i className="fa-solid fa-trash"></i>
+                  </button>
+                ) : (
+                  m.usuarioId !== currentUsuarioId && (
+                    <button 
+                      onClick={() => abrirModal(m)}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-gray)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
+                    >
+                      <i className="fa-solid fa-ellipsis"></i>
+                    </button>
+                  )
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <BottomNavMonitor />
 
@@ -180,7 +344,7 @@ export default function Miembros() {
               Perderá el acceso al asilo y al chat. Su historial de juego se conserva.
             </p>
             <button
-              onClick={() => setMostrarModalExpulsar(false)} // En el futuro hará la llamada a DB
+              onClick={ejecutarExpulsion}
               style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', marginBottom: '16px' }}
             >
               Sí, expulsar
@@ -190,12 +354,6 @@ export default function Miembros() {
               style={{ width: '100%', padding: '16px', backgroundColor: 'transparent', border: '2px solid var(--color-blue)', color: 'var(--color-blue)', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', marginBottom: '16px' }}
             >
               Cancelar
-            </button>
-            <button
-              onClick={() => setMostrarModalExpulsar(false)}
-              style={{ background: 'none', border: 'none', color: 'var(--color-blue)', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
-            >
-              Mejor suspender temporalmente
             </button>
           </div>
         </div>
