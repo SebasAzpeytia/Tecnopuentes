@@ -9,6 +9,7 @@ export default function CrearCuenta() {
   const { crearCuenta } = useAuth();
 
   const [nombre, setNombre] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,7 +22,7 @@ export default function CrearCuenta() {
     e.preventDefault();
     setError(null);
 
-    if (!nombre || !email || !password || !confirmPassword) {
+    if (!nombre || !email || !password || !confirmPassword || !fechaNacimiento) {
       setError('Por favor, completa todos los campos.');
       return;
     }
@@ -51,6 +52,12 @@ export default function CrearCuenta() {
     if (data.user && data.user.identities && data.user.identities.length === 0) {
       setError('Este correo electrónico ya está registrado. Intenta iniciar sesión.');
       return;
+    }
+
+    // Actualizar la fecha de nacimiento en el perfil
+    if (data.user) {
+      const { supabase } = await import('@/lib/supabaseClient');
+      await supabase.from('perfiles').update({ fecha_nacimiento: fechaNacimiento }).eq('id', data.user.id);
     }
 
     // Si llegamos aquí, la cuenta SÍ se creó de verdad.
@@ -114,6 +121,14 @@ export default function CrearCuenta() {
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
         />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label style={{ fontSize: '12px', color: 'var(--color-gray)', marginLeft: '12px', fontWeight: 600 }}>Fecha de nacimiento</label>
+          <Input 
+            type="date" 
+            value={fechaNacimiento}
+            onChange={(e) => setFechaNacimiento(e.target.value)}
+          />
+        </div>
         <Input 
           type="email" 
           placeholder="Correo electrónico o teléfono" 

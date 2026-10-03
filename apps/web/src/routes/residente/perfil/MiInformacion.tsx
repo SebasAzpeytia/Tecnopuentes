@@ -5,12 +5,13 @@ import { supabase } from '@/lib/supabaseClient';
 export default function MiInformacion() {
   const navigate = useNavigate();
   const [nombre, setNombre] = useState('José Ramírez');
-  const [edad, setEdad] = useState('82');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [correo, setCorreo] = useState('jose@correo.com');
   const [inicial, setInicial] = useState('J');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
         if (user.user_metadata?.nombre_completo) {
           const fullName = user.user_metadata.nombre_completo;
@@ -20,9 +21,30 @@ export default function MiInformacion() {
         if (user.email) {
           setCorreo(user.email);
         }
+
+        // Obtener fecha de nacimiento de perfiles
+        const { data: perfil } = await supabase.from('perfiles').select('fecha_nacimiento').eq('id', user.id).single();
+        if (perfil?.fecha_nacimiento) {
+          setFechaNacimiento(perfil.fecha_nacimiento);
+        }
       }
     });
   }, []);
+
+  const guardarCambios = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('perfiles').update({ fecha_nacimiento: fechaNacimiento || null }).eq('id', user.id);
+      // Opcionalmente actualizar metadata si cambia nombre
+      if (nombre) {
+        await supabase.auth.updateUser({ data: { nombre_completo: nombre } });
+        setInicial(nombre.charAt(0).toUpperCase());
+      }
+      alert('Información actualizada correctamente');
+    }
+    setLoading(false);
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', padding: '24px', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}>
@@ -63,11 +85,11 @@ export default function MiInformacion() {
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text)' }}>Edad</label>
+          <label style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text)' }}>Fecha de nacimiento</label>
           <input
-            type="text"
-            value={edad}
-            onChange={(e) => setEdad(e.target.value)}
+            type="date"
+            value={fechaNacimiento}
+            onChange={(e) => setFechaNacimiento(e.target.value)}
             style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--color-light-gray)', outline: 'none', fontSize: '14px', fontFamily: 'var(--font-body)', color: 'var(--color-gray)' }}
           />
         </div>
@@ -82,8 +104,12 @@ export default function MiInformacion() {
         </div>
       </div>
 
-      <button style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(244, 92, 25, 0.3)' }}>
-        Guardar cambios
+      <button 
+        onClick={guardarCambios}
+        disabled={loading}
+        style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(244, 92, 25, 0.3)', opacity: loading ? 0.7 : 1 }}
+      >
+        {loading ? 'Guardando...' : 'Guardar cambios'}
       </button>
 
     </div>

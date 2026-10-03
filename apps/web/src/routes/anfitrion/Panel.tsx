@@ -22,7 +22,7 @@ export default function Panel() {
 
     const { data: miembrosActivos, error } = await supabase
       .from('asilo_miembros')
-      .select('usuario_id, edad')
+      .select('usuario_id')
       .eq('asilo_id', asiloActivoId)
       .eq('rol', 'residente');
 
@@ -36,31 +36,85 @@ export default function Panel() {
 
     const { data: perfiles } = await supabase
       .from('perfiles')
-      .select('id, nombre_completo, avatar_url')
+      .select('id, nombre_completo, avatar_url, fecha_nacimiento')
       .in('id', usuarioIds);
 
-    const perfilesMapa: Record<string, string> = {};
+    const perfilesMapa: Record<string, { nombre: string, fechaNacimiento: string | null }> = {};
     if (perfiles) {
       perfiles.forEach((p: any) => {
-        perfilesMapa[p.id] = p.nombre_completo;
+        perfilesMapa[p.id] = { nombre: p.nombre_completo, fechaNacimiento: p.fecha_nacimiento };
       });
     }
 
+    // Obtener estadísticas de juegos
+    const { data: sesiones } = await supabase
+      .from('sesiones_juego')
+      .select('usuario_id, juego_id, duracion_segundos')
+      .eq('asilo_id', asiloActivoId)
+      .in('usuario_id', usuarioIds);
+
+    const { data: juegos } = await supabase.from('juegos').select('id, nombre');
+    const juegosMap: Record<string, string> = {};
+    juegos?.forEach(j => juegosMap[j.id] = j.nombre);
+
+    const statsMapa: Record<string, { totalSegundos: number, favCounts: Record<string, number> }> = {};
+    usuarioIds.forEach((id: string) => statsMapa[id] = { totalSegundos: 0, favCounts: {} });
+
+    sesiones?.forEach(s => {
+      statsMapa[s.usuario_id].totalSegundos += s.duracion_segundos || 0;
+      statsMapa[s.usuario_id].favCounts[s.juego_id] = (statsMapa[s.usuario_id].favCounts[s.juego_id] || 0) + 1;
+    });
+
     const paleta = ['var(--color-orange)', 'var(--color-blue)', 'var(--color-olive)', 'var(--color-blue-light)', 'var(--color-peach)'];
-    const favs = ['Lotería', 'Memorama', 'Solitario', 'Ajedrez', 'Trivia'];
-    const tiempos = ['6.2 h', '5.4 h', '4.1 h', '2.8 h', '1.3 h'];
 
     const lista = miembrosActivos.map((m, index) => {
-      const nombreReal = perfilesMapa[m.usuario_id] || 'Residente';
+      const perfil = perfilesMapa[m.usuario_id] || { nombre: 'Residente', fechaNacimiento: null };
+      
+      let edadCalculada = '?';
+      if (perfil.fechaNacimiento) {
+        const diffMs = Date.now() - new Date(perfil.fechaNacimiento).getTime();
+        const ageDt = new Date(diffMs); 
+        edadCalculada = Math.abs(ageDt.getUTCFullYear() - 1970).toString();
+      }
+
+      // Calcular estadísticas para este usuario
+      const stat = statsMapa[m.usuario_id];
+      let favId = null;
+      let maxCount = 0;
+      for (const [gId, count] of Object.entries(stat.favCounts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          favId = gId;
+        }
+      }
+      
+      const favoritoStr = favId ? juegosMap[favId] : 'Ninguno';
+      
+      // Formatear tiempo
+      let tiempoStr = '0 h';
+      if (stat.totalSegundos > 0) {
+        const horas = (stat.totalSegundos / 3600).toFixed(1);
+        if (horas === '0.0') {
+          const mins = Math.ceil(stat.totalSegundos / 60);
+          tiempoStr = `${mins} min`;
+        } else {
+          tiempoStr = `${horas} h`;
+        }
+      }
+
       return {
         id: m.usuario_id,
-        nombre: nombreReal,
-        edad: m.edad || '?', // Edad real o signo de interrogación
-        favorito: favs[index % favs.length],
-        tiempo: tiempos[index % tiempos.length],
-        color: paleta[index % paleta.length]
+        nombre: perfil.nombre,
+        edad: edadCalculada,
+        favorito: favoritoStr,
+        tiempo: tiempoStr,
+        color: paleta[index % paleta.length],
+        totalSegundos: stat.totalSegundos // Para ordenamiento posterior si se requiere
       };
     });
+
+    // Ordenar de mayor a menor tiempo de juego por defecto
+    lista.sort((a, b) => b.totalSegundos - a.totalSegundos);
 
     setResidentesDB(lista);
     setLoading(false);
