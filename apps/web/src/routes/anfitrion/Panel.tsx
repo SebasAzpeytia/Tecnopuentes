@@ -11,6 +11,13 @@ export default function Panel() {
   
   const [residentesDB, setResidentesDB] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [metricas, setMetricas] = useState({
+    totalActivos: 0,
+    promedioHoy: '0 min',
+    juegoTop: 'Ninguno',
+    inactivos: 0
+  });
 
   useEffect(() => {
     cargarResidentes();
@@ -22,7 +29,7 @@ export default function Panel() {
 
     const { data: miembrosActivos, error } = await supabase
       .from('asilo_miembros')
-      .select('usuario_id')
+      .select('usuario_id, created_at')
       .eq('asilo_id', asiloActivoId)
       .eq('rol', 'residente');
 
@@ -49,7 +56,7 @@ export default function Panel() {
     // Obtener estadísticas de juegos
     const { data: sesiones } = await supabase
       .from('sesiones_juego')
-      .select('usuario_id, juego_id, duracion_segundos')
+      .select('usuario_id, juego_id, duracion_segundos, created_at')
       .eq('asilo_id', asiloActivoId)
       .in('usuario_id', usuarioIds);
 
@@ -60,9 +67,76 @@ export default function Panel() {
     const statsMapa: Record<string, { totalSegundos: number, favCounts: Record<string, number> }> = {};
     usuarioIds.forEach((id: string) => statsMapa[id] = { totalSegundos: 0, favCounts: {} });
 
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    let segundosHoy = 0;
+    const globalFavCounts: Record<string, number> = {};
+    const ultimasPartidas: Record<string, Date> = {};
+
     sesiones?.forEach(s => {
+      // Per-user stats (historico)
       statsMapa[s.usuario_id].totalSegundos += s.duracion_segundos || 0;
       statsMapa[s.usuario_id].favCounts[s.juego_id] = (statsMapa[s.usuario_id].favCounts[s.juego_id] || 0) + 1;
+      
+      // Global stats
+      const fechaS = new Date(s.created_at);
+      if (fechaS >= hoy) {
+        segundosHoy += s.duracion_segundos || 0;
+      }
+      globalFavCounts[s.juego_id] = (globalFavCounts[s.juego_id] || 0) + 1;
+      
+      // Ultima partida
+      if (!ultimasPartidas[s.usuario_id] || fechaS > ultimasPartidas[s.usuario_id]) {
+        ultimasPartidas[s.usuario_id] = fechaS;
+      }
+    });
+
+    // Calcular metricas superiores
+    let promedioStr = '0 min';
+    if (miembrosActivos.length > 0 && segundosHoy > 0) {
+      const promedioseg = segundosHoy / miembrosActivos.length;
+      const mins = Math.ceil(promedioseg / 60);
+      if (mins > 60) {
+        promedioStr = `${(mins / 60).toFixed(1)} h`;
+      } else {
+        promedioStr = `${mins} min`;
+      }
+    }
+
+    let topId = null;
+    let topC = 0;
+    for (const [gId, c] of Object.entries(globalFavCounts)) {
+      if (c > topC) {
+        topC = c;
+        topId = gId;
+      }
+    }
+    const juegoTopStr = topId ? juegosMap[topId] : 'Ninguno';
+
+    let inactivosCount = 0;
+    const ahoraMs = Date.now();
+    const CINCO_DIAS_MS = 5 * 24 * 60 * 60 * 1000;
+
+    miembrosActivos.forEach((m: any) => {
+      const ultima = ultimasPartidas[m.usuario_id];
+      if (ultima) {
+        if (ahoraMs - ultima.getTime() > CINCO_DIAS_MS) {
+          inactivosCount++;
+        }
+      } else {
+        const creado = new Date(m.created_at).getTime();
+        if (ahoraMs - creado > CINCO_DIAS_MS) {
+          inactivosCount++;
+        }
+      }
+    });
+
+    setMetricas({
+      totalActivos: miembrosActivos.length,
+      promedioHoy: promedioStr,
+      juegoTop: juegoTopStr,
+      inactivos: inactivosCount
     });
 
     const paleta = ['var(--color-orange)', 'var(--color-blue)', 'var(--color-olive)', 'var(--color-blue-light)', 'var(--color-peach)'];
@@ -121,9 +195,9 @@ export default function Panel() {
   }
 
   const resumen = [
-    { valor: '28', etiqueta: 'Residentes activos', color: 'var(--color-blue)', bg: '#e8f0fe', border: 'var(--color-blue-light)' },
-    { valor: '1.4h', etiqueta: 'Tiempo prom. / día', color: 'var(--color-orange-dark)', bg: '#fff0e6', border: 'var(--color-peach)' },
-    { valor: 'Lotería', etiqueta: 'Juego más jugado', color: 'var(--color-olive)', bg: '#f1f8e9', border: '#c5e1a5' },
+    { valor: metricas.totalActivos.toString(), etiqueta: 'Residentes activos', color: 'var(--color-blue)', bg: '#e8f0fe', border: 'var(--color-blue-light)' },
+    { valor: metricas.promedioHoy, etiqueta: 'Tiempo prom. / día', color: 'var(--color-orange-dark)', bg: '#fff0e6', border: 'var(--color-peach)' },
+    { valor: metricas.juegoTop, etiqueta: 'Juego más jugado', color: 'var(--color-olive)', bg: '#f1f8e9', border: '#c5e1a5' },
   ];
 
 
@@ -212,14 +286,16 @@ export default function Panel() {
       </div>
 
       {/* Alerta de inactividad */}
-      <div style={{ padding: '0 24px', marginBottom: '32px' }}>
-        <div style={{ backgroundColor: '#fff3e0', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '16px' }}>⚠️</span>
-          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-orange-dark)' }}>
-            3 residentes sin actividad hace más de 5 días
-          </span>
+      {metricas.inactivos > 0 && (
+        <div style={{ padding: '0 24px', marginBottom: '32px' }}>
+          <div style={{ backgroundColor: '#fff3e0', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '16px' }}>⚠️</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-orange-dark)' }}>
+              {metricas.inactivos} {metricas.inactivos === 1 ? 'residente sin actividad' : 'residentes sin actividad'} hace más de 5 días
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Lista de Miembros */}
       <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
