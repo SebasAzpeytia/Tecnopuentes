@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useSesionStore } from '@/state/useSesionStore';
@@ -23,6 +23,42 @@ export default function EditarIcono() {
     '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
     '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉'
   ];
+
+  const [emojisOcupados, setEmojisOcupados] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function fetchOcupados() {
+      if (!juegoId || !asiloActivoId) return;
+
+      const { data: defaults } = await supabase
+        .from('juego_elementos_default')
+        .select('*')
+        .eq('juego_id', juegoId);
+
+      const { data: personalizados } = await supabase
+        .from('elementos_personalizables')
+        .select('*')
+        .eq('juego_id', juegoId)
+        .eq('asilo_id', asiloActivoId)
+        .eq('tipo', 'emoji');
+
+      const ocupados: string[] = [];
+
+      if (defaults) {
+        defaults.forEach(def => {
+          // Si es el elemento que estamos editando actualmente, no lo marcamos como ocupado
+          // porque el usuario puede decidir quedarse con el mismo emoji.
+          if (def.clave === clave) return;
+
+          const pers = personalizados?.find(p => p.clave === def.clave);
+          const valorFinal = pers ? pers.valor : def.valor;
+          ocupados.push(valorFinal);
+        });
+      }
+      setEmojisOcupados(ocupados);
+    }
+    fetchOcupados();
+  }, [juegoId, asiloActivoId, clave]);
 
   const guardarCambios = async () => {
     if (!asiloActivoId || !juegoId || !clave) return;
@@ -129,25 +165,32 @@ export default function EditarIcono() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', overflowY: 'auto', marginBottom: '24px' }}>
-            {emojisGrid.map((em, idx) => (
-              <button
-                key={idx}
-                onClick={() => setEmojiSeleccionado(em)}
-                style={{
-                  height: '80px',
-                  borderRadius: '16px',
-                  border: emojiSeleccionado === em ? '2px solid var(--color-blue)' : '1px solid var(--color-light-gray)',
-                  backgroundColor: emojiSeleccionado === em ? '#e8eaf6' : 'var(--color-white)',
-                  fontSize: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                {em}
-              </button>
-            ))}
+            {emojisGrid.map((em, idx) => {
+              const ocupado = emojisOcupados.includes(em) && em !== emojiOriginal;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => !ocupado && setEmojiSeleccionado(em)}
+                  disabled={ocupado}
+                  style={{
+                    height: '80px',
+                    borderRadius: '16px',
+                    border: emojiSeleccionado === em ? '2px solid var(--color-blue)' : '1px solid var(--color-light-gray)',
+                    backgroundColor: emojiSeleccionado === em ? '#e8eaf6' : (ocupado ? '#f5f5f5' : 'var(--color-white)'),
+                    fontSize: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: ocupado ? 'not-allowed' : 'pointer',
+                    opacity: ocupado ? 0.3 : 1,
+                    filter: ocupado ? 'grayscale(100%)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {em}
+                </button>
+              );
+            })}
           </div>
 
 
