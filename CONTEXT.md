@@ -140,9 +140,17 @@ Ya están declaradas como variables CSS en `apps/web/src/styles/tokens.css`.
 - **[NUEVO]** Enrutamiento inteligente y "Route Guards" implementados en `App.tsx` usando Zustand (`useSesionStore`) para proteger rutas por rol.
 
 ### ⚠️ Pendiente (Lógica de Datos y Motor de Juegos)
-- Aunque la UI está completa, toda la información actual son datos "quemados" (mocks). Falta conectar Supabase para leer asilos reales, miembros, mensajes de chat y estadísticas.
-- Falta la lógica de almacenamiento de personalización de juegos (`juegos_personalizacion`).
-- Falta el desarrollo funcional de los minijuegos (Memorama, Solitario) con XState.
+- Falta el desarrollo funcional del minijuego Solitario con lógica de estado y personalización.
+- Falta conectar la persistencia del chat grupal en tiempo real.
+- Falta integrar la subida real de imágenes y dibujos en la personalización (Fase 2 de Personalización).
+
+### ✅ Logros Recientes
+- Refactorización de la UI del Anfitrión (Panel y Residentes) con estadísticas dinámicas y alertas.
+- Creación de Reglas de estilo globales SEO (`GEMINI.md`).
+- Implementación **completa** de la Fase 1 de Personalización (Emojis) con guardado en base de datos.
+- Bloqueo dinámico de emojis duplicados en la interfaz de personalización.
+- Implementación de la tabla `juego_elementos_default` con datos para Memorama, Solitario, Ajedrez y Combina Dulces.
+- Conexión del juego Memorama para que lea y utilice las cartas (emojis) personalizados desde Supabase en tiempo real.
 
 ---
 
@@ -209,16 +217,12 @@ implementación con el contexto completo de este documento.
 
 ## 8. Próximos pasos recomendados (en orden)
 
-1. **Terminar el Flujo de Unión (Códigos):**
-   Asegurar que un Residente nuevo pueda usar un código real y entrar a un Asilo real en la base de datos (Supabase).
-2. **Conectar la Base de Datos al Home del Residente:**
-   Lograr que la aplicación sepa *quién* es el usuario y lea el nombre real del asilo para mostrarlo en pantalla.
-3. **Preparar la Personalización (Base de datos):**
-   Conectar la lógica de `juegos_personalizacion` para poder leer emojis/imágenes customizados antes de que arranque el juego.
-4. **Implementar el loop central de Juegos:**
-   Desarrollar el motor XState para Memorama, jugar, y guardar `sesiones_juego` al terminar.
-5. **Mi Actividad + Chat grupal** (probar Supabase Realtime con `mensajes_chat`) + Mi Perfil.
-6. **Panel del Anfitrión** — reemplazar los mocks por la lista real de miembros (query a `asilo_miembros`).
+1. **[Completado]** Terminar el Flujo de Unión (Códigos).
+2. **[Completado]** Conectar la Base de Datos al Home del Residente y Panel del Anfitrión.
+3. **[Completado]** Preparar la Personalización (Base de datos): Flujo completo de lectura/escritura de Emojis funcionales en tiempo real.
+4. **Implementar el motor del Solitario**: Desarrollar la estructura, interfaz, puntuación en tiempo real y el botón "Rendirse", asegurando que utilice los emojis parametrizados desde la DB.
+5. **Fase 2 de Personalización**: Subida de imágenes y Canvas de dibujo.
+6. **Mi Actividad + Chat grupal** (probar Supabase Realtime con `mensajes_chat`) + Mi Perfil.
 7. Recién después: Invitar Monitor, permisos granulares, reportes.
 
 No implementes Ajedrez, Trivia, Damas chinas, Lotería ni "Combina
