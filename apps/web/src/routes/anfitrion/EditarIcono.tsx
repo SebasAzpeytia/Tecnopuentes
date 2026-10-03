@@ -61,7 +61,10 @@ export default function EditarIcono() {
   }, [juegoId, asiloActivoId, clave]);
 
   const guardarCambios = async () => {
-    if (!asiloActivoId || !juegoId || !clave) return;
+    if (!asiloActivoId || !juegoId || !clave) {
+      alert(`Faltan datos para guardar. Asilo: ${!!asiloActivoId}, Juego: ${!!juegoId}, Clave: ${!!clave}`);
+      return;
+    }
     setLoading(true);
 
     const { error } = await supabase
@@ -79,7 +82,8 @@ export default function EditarIcono() {
     if (!error) {
       navigate(-1);
     } else {
-      alert('Error guardando personalización');
+      console.error('Supabase upsert error:', error);
+      alert(`Error guardando: ${error.message}`);
     }
   };
 
@@ -108,10 +112,11 @@ export default function EditarIcono() {
           Editar ícono
         </h1>
         <button
-          onClick={() => navigate(-1)}
-          style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--color-blue)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', cursor: 'pointer' }}
+          onClick={guardarCambios}
+          disabled={loading}
+          style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--color-blue)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-white)', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
         >
-          <i className="fa-solid fa-check"></i>
+          {loading ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-check"></i>}
         </button>
       </div>
 
@@ -195,13 +200,7 @@ export default function EditarIcono() {
 
 
 
-          <button 
-            onClick={guardarCambios}
-            disabled={loading}
-            style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(244, 92, 25, 0.3)', opacity: loading ? 0.7 : 1 }}
-          >
-            {loading ? 'Guardando...' : 'Guardar cambios'}
-          </button>
+
         </div>
       )}
 
