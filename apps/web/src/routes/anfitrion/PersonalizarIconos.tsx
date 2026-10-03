@@ -1,29 +1,81 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNavMonitor from '@/components/layout/BottomNavMonitor';
+import { supabase } from '@/lib/supabaseClient';
+import { useSesionStore } from '@/state/useSesionStore';
 
 export default function PersonalizarIconos() {
   const navigate = useNavigate();
-  const [juegoExpandido, setJuegoExpandido] = useState<string | null>('Memorama');
+  const { asiloActivoId } = useSesionStore();
+  const [juegoExpandido, setJuegoExpandido] = useState<string | null>('memorama');
+  const [juegosData, setJuegosData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const juegos = [
-    {
-      id: 'memorama',
-      nombre: 'Memorama',
-      color: 'var(--color-blue)',
-      icono: 'fa-solid fa-brain',
-      elementos: 8,
-      items: [
-        { id: 'm1', nombre: 'Símbolo 1', emoji: '🐶', previewBg: '#e8eaf6' },
-        { id: 'm2', nombre: 'Símbolo 2', emoji: '🌸', previewBg: '#fbe9e7' },
-        { id: 'm3', nombre: 'Símbolo 3', emoji: '⭐', previewBg: '#f1f8e9' },
-      ]
-    },
-    { id: 'ajedrez', nombre: 'Ajedrez', color: 'var(--color-orange-dark)', icono: 'fa-solid fa-chess-pawn', elementos: 6, items: [] },
-    { id: 'solitario', nombre: 'Solitario', color: 'var(--color-olive)', icono: 'fa-solid fa-clone', elementos: 5, items: [] },
-    { id: 'dulces', nombre: 'Combina Dulces', color: 'var(--color-peach)', icono: 'fa-solid fa-candy-cane', elementos: 6, items: [] },
-    { id: 'loteria', nombre: 'Lotería', color: 'var(--color-blue-light)', icono: 'fa-solid fa-table-cells-large', elementos: 12, items: [] },
-  ];
+  useEffect(() => {
+    cargarDatos();
+  }, [asiloActivoId]);
+
+  const cargarDatos = async () => {
+    if (!asiloActivoId) return;
+    setLoading(true);
+
+    // 1. Obtener juegos
+    const { data: juegos } = await supabase.from('juegos').select('*').eq('activo', true);
+    if (!juegos) return;
+
+    // 2. Obtener elementos por defecto
+    const { data: defaults } = await supabase.from('juego_elementos_default').select('*');
+
+    // 3. Obtener personalizaciones actuales del asilo
+    const { data: personalizados } = await supabase
+      .from('elementos_personalizables')
+      .select('*')
+      .eq('asilo_id', asiloActivoId)
+      .eq('tipo', 'emoji'); // Solo leemos emojis por ahora en esta fase
+
+    // Mapa de iconos y colores (Mock de diseño visual ya que en DB solo está el nombre/slug)
+    const estiloJuego: Record<string, any> = {
+      'memorama': { color: 'var(--color-blue)', icono: 'fa-solid fa-brain' },
+      'solitario': { color: 'var(--color-olive)', icono: 'fa-solid fa-clone' },
+      'ajedrez': { color: 'var(--color-orange-dark)', icono: 'fa-solid fa-chess-pawn' },
+      'dulces': { color: 'var(--color-peach)', icono: 'fa-solid fa-candy-cane' },
+      'loteria': { color: 'var(--color-blue-light)', icono: 'fa-solid fa-table-cells-large' }
+    };
+
+    // Colores de preview para Emojis
+    const bgColors = ['#e8eaf6', '#fbe9e7', '#f1f8e9', '#fff3e0', '#f3e5f5'];
+
+    // Construir la estructura final
+    const juegosArmados = juegos.map(j => {
+      // Elementos base de este juego
+      const baseItems = defaults?.filter(d => d.juego_id === j.id) || [];
+      const persItems = personalizados?.filter(p => p.juego_id === j.id) || [];
+
+      const items = baseItems.map((base, idx) => {
+        const pers = persItems.find(p => p.clave === base.clave);
+        return {
+          id: base.id, // ID default
+          clave: base.clave,
+          nombre: base.nombre_visible,
+          emoji: pers ? pers.valor : base.valor, // Sobrescribimos si hay personalizacion
+          previewBg: bgColors[idx % bgColors.length]
+        };
+      });
+
+      return {
+        id: j.id,
+        slug: j.slug,
+        nombre: j.nombre,
+        color: estiloJuego[j.slug]?.color || 'var(--color-gray)',
+        icono: estiloJuego[j.slug]?.icono || 'fa-solid fa-gamepad',
+        elementos: baseItems.length,
+        items
+      };
+    });
+
+    setJuegosData(juegosArmados);
+    setLoading(false);
+  };
 
   const toggleJuego = (id: string) => {
     if (juegoExpandido === id) setJuegoExpandido(null);
@@ -98,11 +150,18 @@ export default function PersonalizarIconos() {
 
       {/* Accordion de Juegos */}
       <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflowY: 'auto' }}>
-        {juegos.map(j => (
+        
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--color-gray)' }}>
+            <i className="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+          </div>
+        )}
+
+        {!loading && juegosData.map(j => (
           <div key={j.id} style={{ backgroundColor: 'var(--color-white)', borderRadius: '24px', border: '1px solid var(--color-light-gray)', overflow: 'hidden' }}>
             
             <div 
-              onClick={() => toggleJuego(j.id)}
+              onClick={() => toggleJuego(j.slug)}
               style={{ padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -118,16 +177,16 @@ export default function PersonalizarIconos() {
                   </div>
                 </div>
               </div>
-              <i className={`fa-solid ${juegoExpandido === j.id ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ color: 'var(--color-gray)' }}></i>
+              <i className={`fa-solid ${juegoExpandido === j.slug ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ color: 'var(--color-gray)' }}></i>
             </div>
 
             {/* Elementos Expandidos */}
-            {juegoExpandido === j.id && j.items.length > 0 && (
+            {juegoExpandido === j.slug && j.items.length > 0 && (
               <div style={{ padding: '0 20px 20px 20px' }}>
                 <div style={{ borderTop: '1px solid var(--color-light-gray)', margin: '0 0 16px 0' }}></div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {j.items.map(item => (
-                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  {j.items.map((item: any) => (
+                    <div key={item.clave} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{ width: '40px', height: '60px', backgroundColor: item.previewBg, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid rgba(0,0,0,0.05)' }}>
                           {item.emoji}
@@ -137,7 +196,7 @@ export default function PersonalizarIconos() {
                         </span>
                       </div>
                       <button
-                        onClick={() => navigate(`/panel/personalizar/editar?juego=${j.nombre}&elemento=${item.nombre}&emoji=${item.emoji}`)}
+                        onClick={() => navigate(`/panel/personalizar/editar?juego_id=${j.id}&juego_nombre=${j.nombre}&clave=${item.clave}&elemento=${item.nombre}&emoji=${item.emoji}`)}
                         style={{ padding: '8px 24px', borderRadius: '999px', border: '1px solid var(--color-blue)', backgroundColor: 'transparent', color: 'var(--color-blue)', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                       >
                         Editar
@@ -147,15 +206,23 @@ export default function PersonalizarIconos() {
                 </div>
               </div>
             )}
+            
+            {juegoExpandido === j.slug && j.items.length === 0 && (
+              <div style={{ padding: '0 20px 20px 20px', textAlign: 'center', color: 'var(--color-gray)', fontSize: '14px' }}>
+                Aún no hay elementos editables para este juego.
+              </div>
+            )}
 
           </div>
         ))}
 
-        <div style={{ textAlign: 'center', marginTop: '16px', marginBottom: '24px' }}>
-          <p style={{ fontSize: '12px', color: 'var(--color-gray)' }}>
-            Toca un juego para ver y editar todos sus íconos
-          </p>
-        </div>
+        {!loading && (
+          <div style={{ textAlign: 'center', marginTop: '16px', marginBottom: '24px' }}>
+            <p style={{ fontSize: '12px', color: 'var(--color-gray)' }}>
+              Toca un juego para ver y editar todos sus íconos
+            </p>
+          </div>
+        )}
       </div>
 
       <BottomNavMonitor />

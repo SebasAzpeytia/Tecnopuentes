@@ -4,8 +4,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSesionStore } from '@/state/useSesionStore';
 import ModalBase from '@/components/ui/ModalBase';
 
-const EMOJIS = ['🐶', '🚗', '🍎', '🌻', '🎸', '⚽'];
-
 interface Card {
   id: number;
   emoji: string;
@@ -21,6 +19,7 @@ export default function Memorama() {
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
   const [matches, setMatches] = useState(0);
   const [juegoId, setJuegoId] = useState<string | null>(null);
+  const [emojisJuego, setEmojisJuego] = useState<string[]>([]);
   
   const [startTime, setStartTime] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -30,14 +29,48 @@ export default function Memorama() {
   useEffect(() => {
     async function init() {
       const { data } = await supabase.from('juegos').select('id').eq('slug', 'memorama').single();
-      if (data) setJuegoId(data.id);
-      iniciarJuego();
+      if (data) {
+        setJuegoId(data.id);
+        
+        // Cargar emojis por defecto
+        const { data: defaults } = await supabase.from('juego_elementos_default').select('*').eq('juego_id', data.id);
+        
+        // Cargar emojis personalizados si hay asilo activo
+        let personalizados = [];
+        if (asiloActivoId) {
+          const { data: pers } = await supabase.from('elementos_personalizables').select('*').eq('juego_id', data.id).eq('asilo_id', asiloActivoId).eq('tipo', 'emoji');
+          if (pers) personalizados = pers;
+        }
+
+        const emojisFinales: string[] = [];
+        const maxPares = 6; // Usaremos solo 6 pares para la grid 3x4
+        
+        if (defaults) {
+          const sortedDefaults = defaults.sort((a, b) => a.clave.localeCompare(b.clave));
+          for (let i = 0; i < maxPares; i++) {
+            if (i < sortedDefaults.length) {
+              const base = sortedDefaults[i];
+              const pers = personalizados.find((p: any) => p.clave === base.clave);
+              emojisFinales.push(pers ? pers.valor : base.valor);
+            }
+          }
+        }
+        
+        setEmojisJuego(emojisFinales.length > 0 ? emojisFinales : ['🐶', '🚗', '🍎', '🌻', '🎸', '⚽']);
+      }
     }
     init();
-  }, []);
+  }, [asiloActivoId]);
+
+  useEffect(() => {
+    if (emojisJuego.length > 0) {
+      iniciarJuego();
+    }
+  }, [emojisJuego]);
 
   const iniciarJuego = () => {
-    const deck = [...EMOJIS, ...EMOJIS]
+    if (emojisJuego.length === 0) return;
+    const deck = [...emojisJuego, ...emojisJuego]
       .sort(() => Math.random() - 0.5)
       .map((emoji, idx) => ({
         id: idx,
@@ -81,7 +114,7 @@ export default function Memorama() {
         const nuevosAciertos = matches + 1;
         setMatches(nuevosAciertos);
         
-        if (nuevosAciertos === EMOJIS.length) {
+        if (nuevosAciertos === emojisJuego.length) {
           finalizarJuego();
         }
       }, 500);

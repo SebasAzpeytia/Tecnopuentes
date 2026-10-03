@@ -1,21 +1,51 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
+import { useSesionStore } from '@/state/useSesionStore';
 
 export default function EditarIcono() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { asiloActivoId } = useSesionStore();
   
-  const juego = searchParams.get('juego') || 'Ajedrez';
-  const elemento = searchParams.get('elemento') || 'Pieza: Rey';
-  const emojiOriginal = searchParams.get('emoji') || '♚';
+  const juegoId = searchParams.get('juego_id') || '';
+  const clave = searchParams.get('clave') || '';
+  const juegoNombre = searchParams.get('juego_nombre') || 'Juego';
+  const elemento = searchParams.get('elemento') || 'Elemento';
+  const emojiOriginal = searchParams.get('emoji') || '⭐';
 
   const [modo, setModo] = useState<'Emoji' | 'Subir imagen' | 'Dibujar'>('Emoji');
   const [emojiSeleccionado, setEmojiSeleccionado] = useState(emojiOriginal);
+  const [loading, setLoading] = useState(false);
 
   const emojisGrid = [
-    '♚', '♛', '👑', '🤴', '🧙', '🦁', '⚔️', '🛡️',
-    '🏰', '🌟', '♦️', '🦉', '🐺', '🦅', '🌙', '☀️'
+    '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
+    '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
+    '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉'
   ];
+
+  const guardarCambios = async () => {
+    if (!asiloActivoId || !juegoId || !clave) return;
+    setLoading(true);
+
+    const { error } = await supabase
+      .from('elementos_personalizables')
+      .upsert({
+        asilo_id: asiloActivoId,
+        juego_id: juegoId,
+        clave,
+        nombre_visible: elemento,
+        tipo: 'emoji',
+        valor: emojiSeleccionado
+      }, { onConflict: 'asilo_id, juego_id, clave' });
+
+    setLoading(false);
+    if (!error) {
+      navigate(-1);
+    } else {
+      alert('Error guardando personalización');
+    }
+  };
 
   return (
     <div
@@ -51,7 +81,7 @@ export default function EditarIcono() {
 
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <p style={{ fontSize: '12px', color: 'var(--color-gray)', margin: '0 0 16px 0' }}>
-          {juego} • {elemento}
+          {juegoNombre} • {elemento}
         </p>
 
         {/* Preview actual */}
@@ -127,8 +157,12 @@ export default function EditarIcono() {
             </label>
           </div>
 
-          <button style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(244, 92, 25, 0.3)' }}>
-            Guardar cambios
+          <button 
+            onClick={guardarCambios}
+            disabled={loading}
+            style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(244, 92, 25, 0.3)', opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </div>
       )}
@@ -170,7 +204,7 @@ export default function EditarIcono() {
             </div>
           </div>
 
-          <button style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(244, 92, 25, 0.3)' }}>
+          <button onClick={() => alert('Próximamente')} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-orange-dark)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(244, 92, 25, 0.3)' }}>
             Guardar dibujo
           </button>
         </div>
@@ -180,7 +214,7 @@ export default function EditarIcono() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
           <i className="fa-solid fa-image" style={{ fontSize: '48px', color: 'var(--color-light-gray)', marginBottom: '16px' }}></i>
           <p style={{ color: 'var(--color-gray)', textAlign: 'center' }}>Selecciona una imagen de tu galería para usar como ícono.</p>
-          <button style={{ marginTop: '24px', padding: '16px 32px', backgroundColor: 'var(--color-blue)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={() => alert('Próximamente')} style={{ marginTop: '24px', padding: '16px 32px', backgroundColor: 'var(--color-blue)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontWeight: 700, cursor: 'pointer' }}>
             Seleccionar archivo
           </button>
         </div>
