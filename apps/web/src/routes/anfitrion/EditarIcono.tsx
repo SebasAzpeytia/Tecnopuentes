@@ -150,12 +150,7 @@ export default function EditarIcono() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 'auto', marginBottom: '24px' }}>
-            <input type="checkbox" id="aplicar-todos" style={{ width: '20px', height: '20px', accentColor: 'var(--color-orange-dark)' }} />
-            <label htmlFor="aplicar-todos" style={{ fontSize: '12px', color: 'var(--color-gray)' }}>
-              Aplicar este mismo estilo a todas las piezas de ajedrez
-            </label>
-          </div>
+
 
           <button 
             onClick={guardarCambios}
