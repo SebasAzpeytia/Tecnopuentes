@@ -38,8 +38,7 @@ export default function PersonalizarIconos() {
       'memorama': { color: 'var(--color-blue)', icono: 'fa-solid fa-brain' },
       'solitario': { color: 'var(--color-olive)', icono: 'fa-solid fa-clone' },
       'ajedrez': { color: 'var(--color-orange-dark)', icono: 'fa-solid fa-chess-pawn' },
-      'dulces': { color: 'var(--color-peach)', icono: 'fa-solid fa-candy-cane' },
-      'loteria': { color: 'var(--color-blue-light)', icono: 'fa-solid fa-table-cells-large' }
+      'dulces': { color: 'var(--color-peach)', icono: 'fa-solid fa-candy-cane' }
     };
 
     // Colores de preview para Emojis
