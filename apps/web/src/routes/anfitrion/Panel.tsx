@@ -327,10 +327,10 @@ export default function Panel() {
                   </div>
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                      {m.nombre}, {m.edad}
+                      {m.nombre}
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--color-gray)' }}>
-                      Favorito: {m.favorito}
+                    <div style={{ fontSize: '12px', color: 'var(--color-gray)', marginTop: '2px' }}>
+                      Edad: {m.edad} {m.edad !== '?' ? 'años' : ''} • Favorito: {m.favorito}
                     </div>
                   </div>
                 </div>
