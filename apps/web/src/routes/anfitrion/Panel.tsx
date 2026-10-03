@@ -195,7 +195,7 @@ export default function Panel() {
   }
 
   const resumen = [
-    { valor: metricas.totalActivos.toString(), etiqueta: 'Residentes activos', color: 'var(--color-blue)', bg: '#e8f0fe', border: 'var(--color-blue-light)' },
+    { valor: metricas.totalActivos.toString(), etiqueta: 'Residentes inscritos', color: 'var(--color-blue)', bg: '#e8f0fe', border: 'var(--color-blue-light)' },
     { valor: metricas.promedioHoy, etiqueta: 'Tiempo prom. / día', color: 'var(--color-orange-dark)', bg: '#fff0e6', border: 'var(--color-peach)' },
     { valor: metricas.juegoTop, etiqueta: 'Juego más jugado', color: 'var(--color-olive)', bg: '#f1f8e9', border: '#c5e1a5' },
   ];
