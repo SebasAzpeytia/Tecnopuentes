@@ -15,7 +15,7 @@ export default function Panel() {
   const [metricas, setMetricas] = useState({
     totalActivos: 0,
     promedioHoy: '0 min',
-    juegoTop: 'Ninguno',
+    juegoTop: '-',
     inactivos: 0
   });
 
@@ -112,7 +112,7 @@ export default function Panel() {
         topId = gId;
       }
     }
-    const juegoTopStr = topId ? juegosMap[topId] : 'Ninguno';
+    const juegoTopStr = topId ? juegosMap[topId] : '-';
 
     let inactivosCount = 0;
     const ahoraMs = Date.now();
@@ -162,7 +162,7 @@ export default function Panel() {
         }
       }
       
-      const favoritoStr = favId ? juegosMap[favId] : 'Ninguno';
+      const favoritoStr = favId ? juegosMap[favId] : '-';
       
       // Formatear tiempo
       let tiempoStr = '0 h';
@@ -275,7 +275,7 @@ export default function Panel() {
               flex: 1,
             }}
           >
-            <span style={{ fontSize: '24px', fontWeight: 800, color: item.color, fontFamily: 'var(--font-title)', marginBottom: '4px' }}>
+            <span style={{ fontSize: '24px', fontWeight: 800, color: item.color, fontFamily: 'var(--font-title)', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {item.valor}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--color-gray)', lineHeight: '1.2' }}>
