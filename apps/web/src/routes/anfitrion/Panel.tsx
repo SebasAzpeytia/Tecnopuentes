@@ -227,7 +227,7 @@ export default function Panel() {
         </div>
         {rolActivo === 'anfitrion' && (
           <button
-            onClick={() => navigate('/panel/miembros')}
+            onClick={() => alert('Próximamente: Configuración del asilo')}
             style={{
               width: '40px',
               height: '40px',
@@ -238,7 +238,8 @@ export default function Panel() {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--color-white)',
-              cursor: 'pointer',
+              cursor: 'not-allowed',
+              opacity: 0.6,
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           >

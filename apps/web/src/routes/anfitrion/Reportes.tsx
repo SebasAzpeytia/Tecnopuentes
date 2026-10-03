@@ -46,7 +46,7 @@ export default function Reportes() {
         </div>
         {rolActivo === 'anfitrion' && (
           <button
-            onClick={() => navigate('/panel/miembros')}
+            onClick={() => alert('Próximamente: Configuración de reportes')}
             style={{
               width: '40px',
               height: '40px',
@@ -57,7 +57,8 @@ export default function Reportes() {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--color-white)',
-              cursor: 'pointer',
+              cursor: 'not-allowed',
+              opacity: 0.6,
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           >
