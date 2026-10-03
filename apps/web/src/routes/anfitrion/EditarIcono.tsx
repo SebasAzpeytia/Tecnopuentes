@@ -182,8 +182,8 @@ export default function EditarIcono() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: ocupado ? 'not-allowed' : 'pointer',
-                    opacity: ocupado ? 0.3 : 1,
-                    filter: ocupado ? 'grayscale(100%)' : 'none',
+                    opacity: ocupado ? 0.5 : 1,
+                    filter: ocupado ? 'grayscale(75%)' : 'none',
                     transition: 'all 0.2s'
                   }}
                 >
