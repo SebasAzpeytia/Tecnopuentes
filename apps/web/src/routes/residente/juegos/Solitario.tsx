@@ -30,7 +30,7 @@ export default function Solitario() {
 
   // Reference for intercepting navigation
   const isWonRef = useRef(false);
-  isWonRef.current = state.matches('ganado');
+  isWonRef.current = state.matches('ganado') || state.matches('surrendered');
 
   useEffect(() => {
     // Push fake state to trap the back button
@@ -342,7 +342,7 @@ export default function Solitario() {
       </ModalBase>
 
       {/* Modal Ganado */}
-      <ModalBase isOpen={state.matches('ganado')} onClose={() => navigate(-1)}>
+      <ModalBase isOpen={state.matches('ganado')} onClose={() => {}}>
         <div style={{ width: '80px', height: '80px', backgroundColor: 'var(--color-green)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', color: 'var(--color-white)', margin: '0 auto 24px auto', boxShadow: '0 8px 24px rgba(22, 163, 74, 0.3)' }}>
           <i className="fa-solid fa-trophy"></i>
         </div>
@@ -354,7 +354,7 @@ export default function Solitario() {
           Tiempo: <strong>{formatearTiempo(elapsedSeconds)}</strong>
         </p>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/home', { replace: true })}
           style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-blue)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '18px', fontWeight: 700, cursor: 'pointer' }}
         >
           Salir
@@ -362,7 +362,7 @@ export default function Solitario() {
       </ModalBase>
 
       {/* Modal Perdedor (Rendido) */}
-      <ModalBase isOpen={state.matches('surrendered')} onClose={() => navigate(-1)}>
+      <ModalBase isOpen={state.matches('surrendered')} onClose={() => {}}>
         <h2 style={{ fontSize: '24px', color: 'var(--color-text)', margin: '0 0 8px 0', fontFamily: 'var(--font-title)', textAlign: 'center' }}>
           Fin del juego
         </h2>
@@ -371,11 +371,38 @@ export default function Solitario() {
           Puntos: <strong>{score}</strong>
         </p>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/home', { replace: true })}
           style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-blue)', color: 'var(--color-white)', border: 'none', borderRadius: '999px', fontSize: '18px', fontWeight: 700, cursor: 'pointer' }}
         >
           Salir
         </button>
+      </ModalBase>
+      {/* Modal Rendirse Interceptado por PopState */}
+      <ModalBase isOpen={showSurrenderModal} onClose={() => setShowSurrenderModal(false)}>
+        <div style={{ textAlign: 'center' }}>
+          <i className="fa-solid fa-flag" style={{ fontSize: '48px', color: 'var(--color-gray)', marginBottom: '16px' }}></i>
+          <h2 style={{ fontSize: '24px', color: 'var(--color-text)', marginBottom: '16px', fontFamily: 'var(--font-title)' }}>¿Te rindes?</h2>
+          <p style={{ fontSize: '16px', color: 'var(--color-gray)', marginBottom: '32px' }}>
+            Si sales ahora, perderás 50 puntos.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              onClick={() => {
+                setShowSurrenderModal(false);
+                send({ type: 'SURRENDER' });
+              }}
+              style={{ padding: '16px', backgroundColor: 'var(--color-peach)', color: 'var(--color-white)', border: 'none', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Sí, rendirme
+            </button>
+            <button
+              onClick={() => setShowSurrenderModal(false)}
+              style={{ padding: '16px', backgroundColor: 'var(--color-light-gray)', color: 'var(--color-gray)', border: 'none', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
       </ModalBase>
     </div>
   );
