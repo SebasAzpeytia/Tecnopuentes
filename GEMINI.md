@@ -10,3 +10,7 @@
 ## 3. Listas y Viñetas
 - **Usar etiquetas de listas nativas**: Cuando necesites enumerar elementos o crear viñetas, **nunca** utilices símbolos de texto como `•` o `-` incrustados directamente en divs o spans.
 - **Estructura correcta**: Utiliza siempre las etiquetas `<ul>` (listas desordenadas) u `<ol>` (listas ordenadas), con sus respectivos hijos `<li>`. Si requieres un estilo visual distinto, aplica CSS sobre estas etiquetas semánticas en lugar de recrearlas con divs.
+
+## 4. Control de Versiones (Git)
+- **No manipular el repositorio**: NO ejecutar comandos como `git commit`, `git add`, `git merge`, `git push`, o cualquier comando que altere el estado local o remoto del repositorio.
+- **Solo lectura**: Únicamente tienes permitido ejecutar comandos de lectura (como `git status`, `git log`, `git diff`) o comandos para cambiar de rama (`git checkout`, `git switch`) con el único fin de lectura o exploración.

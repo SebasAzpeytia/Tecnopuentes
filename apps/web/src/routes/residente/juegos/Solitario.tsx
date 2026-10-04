@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useSesionStore } from '@/state/useSesionStore';
 import ModalBase from '@/components/ui/ModalBase';
+import GameLayout, { formatearTiempo } from '@/components/ui/GameLayout';
 import { useMachine } from '@xstate/react';
 import { solitarioMachine, Card } from '../../../../../../packages/game-engines/solitario/src/machine';
 
@@ -22,6 +23,7 @@ export default function Solitario() {
 
   const [state, send] = useMachine(solitarioMachine);
   const { stock, waste, foundations, tableau, score, elapsedSeconds } = state.context;
+  const visualScore = Math.max(0, score);
 
   const [emojis, setEmojis] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -126,21 +128,31 @@ export default function Solitario() {
         .single();
         
       if (miembro) {
+        let finalScore = score;
+        
+        // Si el puntaje es negativo (porque el castigo superó los puntos de la sesión actual)
+        // debemos asegurar que no baje el total global por debajo de 0.
+        if (score < 0) {
+          const { data: acts } = await supabase.from('actividad_juegos')
+            .select('puntaje_obtenido')
+            .eq('miembro_id', miembro.id);
+          const rawTotal = acts?.reduce((sum, r) => sum + (r.puntaje_obtenido || 0), 0) || 0;
+          const totalScore = Math.max(0, rawTotal);
+          
+          finalScore = Math.max(score, -totalScore);
+        }
+
         await supabase.from('actividad_juegos').insert({
           miembro_id: miembro.id,
           juego_id: juego.id,
           duracion_segundos: elapsedSeconds,
-          puntaje_obtenido: score
+          puntaje_obtenido: finalScore
         });
       }
     }
   };
 
-  const formatearTiempo = (segundos: number) => {
-    const mins = Math.floor(segundos / 60);
-    const secs = segundos % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+
 
   const renderCard = (card: Card, isSelected: boolean = false, onClick?: () => void) => {
     if (card.isFlipped) {
@@ -234,26 +246,13 @@ export default function Solitario() {
   if (loading) return <div style={{ padding: '24px', textAlign: 'center' }}>Cargando Solitario...</div>;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-olive)', display: 'flex', flexDirection: 'column' }}>
+    <GameLayout 
+      onSurrender={() => setShowSurrenderModal(true)} 
+      timeSeconds={elapsedSeconds} 
+      score={visualScore} 
+      backgroundColor="var(--color-olive)"
+    >
       
-      {/* Header Info */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--color-white)', borderBottom: '1px solid var(--color-light-gray)' }}>
-        <button 
-          onClick={() => setShowSurrenderModal(true)}
-          style={{ padding: '12px 16px', backgroundColor: '#ef4444', color: 'var(--color-white)', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', display: 'flex', gap: '8px', alignItems: 'center' }}
-        >
-          <i className="fa-solid fa-flag"></i> Rendirse
-        </button>
-        
-        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-text)', fontFamily: 'monospace' }}>
-          {formatearTiempo(elapsedSeconds)}
-        </div>
-
-        <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--color-orange-dark)', display: 'flex', gap: '4px', alignItems: 'center' }}>
-          <i className="fa-solid fa-star"></i> {score}
-        </div>
-      </div>
-
       {/* Tablero */}
       <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
@@ -350,7 +349,7 @@ export default function Solitario() {
           ¡Ganaste!
         </h2>
         <p style={{ fontSize: '16px', color: 'var(--color-gray)', margin: '0 0 32px 0', lineHeight: '1.5', textAlign: 'center' }}>
-          Puntos finales: <strong>{score}</strong><br/>
+          Puntos finales: <strong>{visualScore}</strong><br/>
           Tiempo: <strong>{formatearTiempo(elapsedSeconds)}</strong>
         </p>
         <button
@@ -368,7 +367,7 @@ export default function Solitario() {
         </h2>
         <p style={{ fontSize: '16px', color: 'var(--color-gray)', margin: '0 0 32px 0', lineHeight: '1.5', textAlign: 'center' }}>
           Te has rendido.<br/>
-          Puntos: <strong>{score}</strong>
+          Puntos: <strong>{visualScore}</strong>
         </p>
         <button
           onClick={() => navigate('/home', { replace: true })}
@@ -404,6 +403,6 @@ export default function Solitario() {
           </div>
         </div>
       </ModalBase>
-    </div>
+    </GameLayout>
   );
 }

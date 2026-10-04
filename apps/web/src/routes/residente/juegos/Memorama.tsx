@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useSesionStore } from '@/state/useSesionStore';
 import ModalBase from '@/components/ui/ModalBase';
+import GameLayout from '@/components/ui/GameLayout';
 
 interface Card {
   id: number;
@@ -25,6 +26,7 @@ export default function Memorama() {
   const [showModal, setShowModal] = useState(false);
   const [showSurrenderModal, setShowSurrenderModal] = useState(false);
   const [duracion, setDuracion] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   // Reference for intercepting navigation
   const isWonRef = useRef(false);
@@ -58,12 +60,20 @@ export default function Memorama() {
       .single();
 
     if (miembro) {
-      // Castigo por rendirse
+      const { data: acts } = await supabase.from('actividad_juegos')
+        .select('puntaje_obtenido')
+        .eq('miembro_id', miembro.id);
+      const rawTotal = acts?.reduce((sum, r) => sum + (r.puntaje_obtenido || 0), 0) || 0;
+      const totalScore = Math.max(0, rawTotal);
+      
+      // Castigo por rendirse es -20, pero sin bajar de 0 el total global
+      const finalScore = Math.max(-20, -totalScore);
+
       await supabase.from('actividad_juegos').insert({
         miembro_id: miembro.id,
         juego_id: juegoId,
         duracion_segundos: Math.floor((Date.now() - (startTime || Date.now())) / 1000),
-        puntaje_obtenido: 0 // Rendirse en Memorama te deja con 0
+        puntaje_obtenido: finalScore
       });
     }
 
@@ -128,7 +138,18 @@ export default function Memorama() {
     setMatches(0);
     setShowModal(false);
     setStartTime(Date.now());
+    setElapsedSeconds(0);
   };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (startTime && !showModal && !showSurrenderModal) {
+      interval = setInterval(() => {
+        setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [startTime, showModal, showSurrenderModal]);
 
   const handleCardClick = (index: number) => {
     if (flippedIndices.length === 2) return; // Esperando animación
@@ -203,21 +224,12 @@ export default function Memorama() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* Header simple */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '24px', gap: '16px', backgroundColor: 'var(--color-white)', borderBottom: '1px solid var(--color-light-gray)' }}>
-        <button 
-          onClick={() => navigate(-1)}
-          style={{ width: '40px', height: '40px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--color-light-gray)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px', color: 'var(--color-text)' }}
-        >
-          <i className="fa-solid fa-arrow-left"></i>
-        </button>
-        <h1 style={{ margin: 0, fontSize: '24px', fontFamily: 'var(--font-title)', color: 'var(--color-text)' }}>
-          Memorama
-        </h1>
-      </div>
-
+    <GameLayout
+      onSurrender={() => setShowSurrenderModal(true)}
+      timeSeconds={elapsedSeconds}
+      score={`${matches} / ${emojisJuego.length}`}
+      backgroundColor="var(--color-bg)"
+    >
       {/* Grid de Juego */}
       <div style={{ flex: 1, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '400px' }}>
@@ -299,6 +311,6 @@ export default function Memorama() {
           </div>
         </div>
       </ModalBase>
-    </div>
+    </GameLayout>
   );
 }
