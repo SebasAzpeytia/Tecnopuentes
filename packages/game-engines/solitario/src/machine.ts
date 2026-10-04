@@ -178,7 +178,7 @@ export const solitarioMachine = setup({
       return { elapsedSeconds: Math.floor((Date.now() - context.startTime) / 1000) };
     }),
     surrender: assign(({ context }) => {
-      return { score: context.score - 50 };
+      return { score: Math.max(0, context.score - 50) };
     })
   },
   guards: {
