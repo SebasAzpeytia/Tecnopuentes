@@ -13,9 +13,10 @@ const JUEGOS = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const { asiloActivoId } = useSesionStore();
+  const { asiloActivoId, usuarioId } = useSesionStore();
   const [nombreResidente, setNombreResidente] = useState<string | null>(null);
   const [nombreAsilo, setNombreAsilo] = useState<string | null>(null);
+  const [puntos, setPuntos] = useState<number>(0);
 
   useEffect(() => {
     // 1. Obtener nombre del usuario
@@ -27,8 +28,8 @@ export default function Home() {
       }
     });
 
-    // 2. Obtener nombre del asilo si tenemos el ID
-    if (asiloActivoId) {
+    // 2. Obtener nombre del asilo y puntos
+    if (asiloActivoId && usuarioId) {
       supabase
         .from('asilos')
         .select('nombre')
@@ -37,8 +38,20 @@ export default function Home() {
         .then(({ data }) => {
           if (data) setNombreAsilo(data.nombre);
         });
+
+      supabase
+        .from('actividad_juegos')
+        .select('puntaje_obtenido, asilo_miembros!inner(usuario_id, asilo_id)')
+        .eq('asilo_miembros.usuario_id', usuarioId)
+        .eq('asilo_miembros.asilo_id', asiloActivoId)
+        .then(({ data }) => {
+          if (data) {
+            const total = data.reduce((sum: number, row: any) => sum + (row.puntaje_obtenido || 0), 0);
+            setPuntos(total);
+          }
+        });
     }
-  }, [asiloActivoId]);
+  }, [asiloActivoId, usuarioId]);
 
   return (
     <div
@@ -76,22 +89,27 @@ export default function Home() {
           </p>
         </div>
         
-        {/* Botón de notificaciones (Campana) */}
-        <button
-          style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--color-blue-light)',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <i className="fa-solid fa-bell" style={{ fontSize: '20px', color: 'var(--color-white)' }}></i>
-        </button>
+        {/* Puntos y Notificaciones */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ backgroundColor: 'var(--color-peach)', padding: '8px 12px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--color-white)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <i className="fa-solid fa-star"></i> {puntos}
+          </div>
+          <button
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--color-blue-light)',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <i className="fa-solid fa-bell" style={{ fontSize: '20px', color: 'var(--color-white)' }}></i>
+          </button>
+        </div>
       </div>
 
       {/* Título de sección */}

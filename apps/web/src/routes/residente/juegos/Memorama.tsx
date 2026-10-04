@@ -139,12 +139,22 @@ export default function Memorama() {
     setShowModal(true);
 
     // Guardar en la DB
-    await supabase.from('sesiones_juego').insert({
-      asilo_id: asiloActivoId,
-      usuario_id: usuarioId,
-      juego_id: juegoId,
-      duracion_segundos: duracionSegundos
-    });
+    // Obtener el miembro_id real
+    const { data: miembro } = await supabase
+      .from('asilo_miembros')
+      .select('id')
+      .eq('usuario_id', usuarioId)
+      .eq('asilo_id', asiloActivoId)
+      .single();
+
+    if (miembro) {
+      await supabase.from('actividad_juegos').insert({
+        miembro_id: miembro.id,
+        juego_id: juegoId,
+        duracion_segundos: duracionSegundos,
+        puntaje_obtenido: 100 // Memorama da 100 puntos fijos por ganar
+      });
+    }
   };
 
   return (
