@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useSesionStore } from '@/state/useSesionStore';
 import BottomNav from '@/components/layout/BottomNav';
 
 const JUEGOS = [
   { id: 'memorama', nombre: 'Memorama', icon: 'fa-solid fa-brain', bgColor: 'var(--color-blue)', borderColor: 'var(--color-blue-light)' },
-  { id: 'trivia', nombre: 'Trivia', icon: 'fa-solid fa-question', bgColor: 'var(--color-orange)', borderColor: 'var(--color-peach)' },
-  { id: 'damaschinas', nombre: 'Damas chinas', icon: 'fa-solid fa-circle-dot', bgColor: 'var(--color-blue-light)', borderColor: 'var(--color-blue-light)' },
-  { id: 'ajedrez', nombre: 'Ajedrez', icon: 'fa-solid fa-chess-knight', bgColor: 'var(--color-orange)', borderColor: 'var(--color-peach)' },
   { id: 'solitario', nombre: 'Solitario', icon: 'fa-solid fa-clone', bgColor: 'var(--color-blue)', borderColor: 'var(--color-blue-light)' },
-  { id: 'loteria', nombre: 'Lotería', icon: 'fa-solid fa-table-cells-large', bgColor: 'var(--color-peach)', borderColor: 'var(--color-peach)' },
+  { id: 'ajedrez', nombre: 'Ajedrez', icon: 'fa-solid fa-chess-knight', bgColor: 'var(--color-orange)', borderColor: 'var(--color-peach)' },
+  { id: 'dulces', nombre: 'Combina Dulces', icon: 'fa-solid fa-candy-cane', bgColor: 'var(--color-peach)', borderColor: 'var(--color-peach)' },
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
   const { asiloActivoId } = useSesionStore();
   const [nombreResidente, setNombreResidente] = useState<string | null>(null);
   const [nombreAsilo, setNombreAsilo] = useState<string | null>(null);
@@ -111,7 +111,7 @@ export default function Home() {
         {JUEGOS.map((juego) => (
           <button
             key={juego.id}
-            onClick={() => alert(`Próximamente: ${juego.nombre}`)} // Temporalmente
+            onClick={() => navigate('/juegos/' + juego.id)}
             style={{
               backgroundColor: 'var(--color-white)',
               border: `2px solid ${juego.borderColor}`,
