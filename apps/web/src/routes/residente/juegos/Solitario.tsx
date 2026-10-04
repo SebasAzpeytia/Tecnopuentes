@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useSesionStore } from '@/state/useSesionStore';
@@ -27,6 +27,26 @@ export default function Solitario() {
   const [loading, setLoading] = useState(true);
   const [showSurrenderModal, setShowSurrenderModal] = useState(false);
   const [selection, setSelection] = useState<Selection>(null);
+
+  // Reference for intercepting navigation
+  const isWonRef = useRef(false);
+  isWonRef.current = state.matches('ganado');
+
+  useEffect(() => {
+    // Push fake state to trap the back button
+    window.history.pushState(null, '', window.location.href);
+
+    const handlePopState = () => {
+      if (!isWonRef.current) {
+        setShowSurrenderModal(true);
+        // Repush the state to maintain the trap
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Inicializar juego cargando personalización
   useEffect(() => {

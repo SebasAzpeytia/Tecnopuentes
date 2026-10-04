@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useSesionStore } from '@/state/useSesionStore';
@@ -23,7 +23,52 @@ export default function Memorama() {
   
   const [startTime, setStartTime] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showSurrenderModal, setShowSurrenderModal] = useState(false);
   const [duracion, setDuracion] = useState(0);
+
+  // Reference for intercepting navigation
+  const isWonRef = useRef(false);
+  isWonRef.current = showModal; // showModal is true when won
+
+  useEffect(() => {
+    // Push fake state to trap the back button
+    window.history.pushState(null, '', window.location.href);
+
+    const handlePopState = () => {
+      if (!isWonRef.current) {
+        setShowSurrenderModal(true);
+        // Repush the state to maintain the trap
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleSurrender = async () => {
+    setShowSurrenderModal(false);
+    
+    // Obtener el miembro_id real
+    const { data: miembro } = await supabase
+      .from('asilo_miembros')
+      .select('id')
+      .eq('usuario_id', usuarioId)
+      .eq('asilo_id', asiloActivoId)
+      .single();
+
+    if (miembro) {
+      // Castigo por rendirse
+      await supabase.from('actividad_juegos').insert({
+        miembro_id: miembro.id,
+        juego_id: juegoId,
+        duracion_segundos: Math.floor((Date.now() - (startTime || Date.now())) / 1000),
+        puntaje_obtenido: 0 // Rendirse en Memorama te deja con 0
+      });
+    }
+
+    navigate('/home', { replace: true });
+  };
 
   // Obtener ID del juego y mezclar cartas
   useEffect(() => {
@@ -214,11 +259,35 @@ export default function Memorama() {
         </button>
         
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/home', { replace: true })}
           style={{ width: '100%', padding: '16px', backgroundColor: 'transparent', border: '2px solid var(--color-light-gray)', color: 'var(--color-gray)', borderRadius: '999px', fontSize: '18px', fontWeight: 700, cursor: 'pointer' }}
         >
           Salir
         </button>
+      </ModalBase>
+      {/* Modal Rendirse */}
+      <ModalBase isOpen={showSurrenderModal} onClose={() => setShowSurrenderModal(false)}>
+        <div style={{ textAlign: 'center' }}>
+          <i className="fa-solid fa-flag" style={{ fontSize: '48px', color: 'var(--color-gray)', marginBottom: '16px' }}></i>
+          <h2 style={{ fontSize: '24px', color: 'var(--color-text)', marginBottom: '16px', fontFamily: 'var(--font-title)' }}>¿Te rindes?</h2>
+          <p style={{ fontSize: '16px', color: 'var(--color-gray)', marginBottom: '32px' }}>
+            Si sales ahora, no obtendrás puntos por esta partida.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              onClick={handleSurrender}
+              style={{ padding: '16px', backgroundColor: 'var(--color-peach)', color: 'var(--color-white)', border: 'none', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Sí, rendirme
+            </button>
+            <button
+              onClick={() => setShowSurrenderModal(false)}
+              style={{ padding: '16px', backgroundColor: 'var(--color-light-gray)', color: 'var(--color-gray)', border: 'none', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
       </ModalBase>
     </div>
   );
