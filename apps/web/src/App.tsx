@@ -24,6 +24,7 @@ import AyudaSoporte from '@/routes/residente/perfil/AyudaSoporte';
 // Rutas de Anfitrión
 import Panel from '@/routes/anfitrion/Panel';
 import Memorama from '@/routes/residente/juegos/Memorama';
+import Solitario from '@/routes/residente/juegos/Solitario';
 import Miembros from '@/routes/anfitrion/Miembros';
 import AgregarMiembro from '@/routes/anfitrion/AgregarMiembro';
 import PersonalizarIconos from '@/routes/anfitrion/PersonalizarIconos';
@@ -123,6 +124,7 @@ export default function App() {
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/perfil" element={<Perfil />} />
                 <Route path="/juegos/memorama" element={<Memorama />} />
+                <Route path="/juegos/solitario" element={<Solitario />} />
               </>
             )}
             
