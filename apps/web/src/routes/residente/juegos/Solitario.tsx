@@ -117,12 +117,22 @@ export default function Solitario() {
     if (!asiloActivoId || !usuarioId) return;
     const { data: juego } = await supabase.from('juegos').select('id').eq('slug', 'solitario').single();
     if (juego) {
-      await supabase.from('sesiones_juego').insert({
-        asilo_id: asiloActivoId,
-        usuario_id: usuarioId,
-        juego_id: juego.id,
-        duracion_segundos: elapsedSeconds
-      });
+      // Obtener el miembro_id real
+      const { data: miembro } = await supabase
+        .from('asilo_miembros')
+        .select('id')
+        .eq('usuario_id', usuarioId)
+        .eq('asilo_id', asiloActivoId)
+        .single();
+        
+      if (miembro) {
+        await supabase.from('actividad_juegos').insert({
+          miembro_id: miembro.id,
+          juego_id: juego.id,
+          duracion_segundos: elapsedSeconds,
+          puntaje_obtenido: score
+        });
+      }
     }
   };
 
