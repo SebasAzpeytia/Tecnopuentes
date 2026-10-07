@@ -26,6 +26,7 @@ import Panel from '@/routes/anfitrion/Panel';
 import Memorama from '@/routes/residente/juegos/Memorama';
 import Solitario from '@/routes/residente/juegos/Solitario';
 import Ajedrez from '@/routes/residente/juegos/Ajedrez';
+import AjedrezJuego from '@/routes/residente/juegos/AjedrezJuego';
 import CombinaDulces from '@/routes/residente/juegos/CombinaDulces';
 import Miembros from '@/routes/anfitrion/Miembros';
 import AgregarMiembro from '@/routes/anfitrion/AgregarMiembro';
@@ -128,6 +129,7 @@ export default function App() {
                 <Route path="/juegos/memorama" element={<Memorama />} />
                 <Route path="/juegos/solitario" element={<Solitario />} />
                 <Route path="/juegos/ajedrez" element={<Ajedrez />} />
+                <Route path="/juegos/ajedrez/:partidaId" element={<AjedrezJuego />} />
                 <Route path="/juegos/dulces" element={<CombinaDulces />} />
               </>
             )}
