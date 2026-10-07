@@ -20,12 +20,12 @@ clásicos, chat grupal y personalización visual.
 - Interfaz (UI) construida para los tres roles.
 - Esquema de Base de Datos y políticas de seguridad (RLS) listos.
 - Reglas SEO y de semántica HTML definidas (`GEMINI.md`).
-- Personalización de Juegos (Fase 1: Emojis) completamente conectada a Supabase en tiempo real.
+- Personalización de Juegos (Fase 1: Emojis) conectada a Supabase en tiempo real.
+- **Motores de Juego implementados**: Solitario (con XState), Memorama y Ajedrez Multijugador (con Supabase Realtime). Todos cuentan con registro de actividad histórica.
 
 ⚠️ **Próximos pasos en desarrollo:**
-- Creación de los motores de juego en `packages/game-engines` empezando por Solitario.
 - Conexión del chat grupal y la sección de "Mi Actividad".
-- Subida de imágenes personalizadas (Fase 2 de Personalización).
+- Subida de imágenes personalizadas a Supabase Storage (Fase 2 de Personalización).
 
 ## Estructura
 

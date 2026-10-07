@@ -76,12 +76,8 @@ reabras sin una razón fuerte, ya se evaluaron alternativas.
 
 7. **v1 (alcance de esta primera versión):**
    - **Roles:** los 3 completos (Residente, Monitor, Anfitrión).
-   - **Juegos:** solo **Memorama y Solitario** (los más simples). Ajedrez,
-     Trivia, Damas chinas, Lotería y "Combina Dulces" quedan fuera del
-     v1 — hay wireframes de Ajedrez y Combina Dulces pero NO se
-     implementan todavía.
-   - **Personalización:** incluida en v1, pero acotada a Memorama y
-     Solitario únicamente.
+   - **Juegos:** Memorama, Solitario y Ajedrez Multijugador (implementado con Supabase Realtime). Trivia, Damas chinas, Lotería y "Combina Dulces" quedan fuera del v1 por ahora.
+   - **Personalización:** incluida en v1, aplicada a Memorama y Solitario.
 
 8. **Manejo de estado de los juegos con XState**, pero en **cuarentena
    estricta**: solo dentro de los componentes de juego (Memorama,
@@ -139,18 +135,20 @@ Ya están declaradas como variables CSS en `apps/web/src/styles/tokens.css`.
 - **[NUEVO]** Fase de Maquetación UI 100% completada. Se construyeron todas las pantallas en React para Residente, Monitor y Anfitrión, incluyendo sub-vistas (Ayuda, Notificaciones, etc.).
 - **[NUEVO]** Enrutamiento inteligente y "Route Guards" implementados en `App.tsx` usando Zustand (`useSesionStore`) para proteger rutas por rol.
 
-### ⚠️ Pendiente (Lógica de Datos y Motor de Juegos)
-- Falta el desarrollo funcional del minijuego Solitario con lógica de estado y personalización.
+### ⚠️ Pendiente (Conectividad Final y Storage)
 - Falta conectar la persistencia del chat grupal en tiempo real.
 - Falta integrar la subida real de imágenes y dibujos en la personalización (Fase 2 de Personalización).
+- Completar la sección "Mi Actividad" leyendo el historial real desde Supabase.
 
 ### ✅ Logros Recientes
 - Refactorización de la UI del Anfitrión (Panel y Residentes) con estadísticas dinámicas y alertas.
-- Creación de Reglas de estilo globales SEO (`GEMINI.md`).
 - Implementación **completa** de la Fase 1 de Personalización (Emojis) con guardado en base de datos.
 - Bloqueo dinámico de emojis duplicados en la interfaz de personalización.
-- Implementación de la tabla `juego_elementos_default` con datos para Memorama, Solitario, Ajedrez y Combina Dulces.
-- Conexión del juego Memorama para que lea y utilice las cartas (emojis) personalizados desde Supabase en tiempo real.
+- Implementación de la tabla `juego_elementos_default` y lectura en tiempo real para cartas de Memorama y Solitario.
+- Implementación del **Solitario** con motor XState y registro de puntuación histórica validando que no baje de 0.
+- Implementación del **Memorama** con temporizador y penalización global de 20 puntos al rendirse.
+- Implementación de **Ajedrez Multijugador** con *Lobby* dinámico usando *Supabase Presence* (evitando invitaciones impertinentes) e invitaciones con *Supabase Broadcast*. Sincronización P2P vía *Postgres Changes*.
+- Creación de un `GameLayout` unificado que estandariza la cabecera (botón rendirse, tiempo, puntos) y previene escapes de pantalla interceptando el botón de retroceso (`popstate`).
 
 ---
 
@@ -219,15 +217,13 @@ implementación con el contexto completo de este documento.
 
 1. **[Completado]** Terminar el Flujo de Unión (Códigos).
 2. **[Completado]** Conectar la Base de Datos al Home del Residente y Panel del Anfitrión.
-3. **[Completado]** Preparar la Personalización (Base de datos): Flujo completo de lectura/escritura de Emojis funcionales en tiempo real.
-4. **Implementar el motor del Solitario**: Desarrollar la estructura, interfaz, puntuación en tiempo real y el botón "Rendirse", asegurando que utilice los emojis parametrizados desde la DB.
-5. **Fase 2 de Personalización**: Subida de imágenes y Canvas de dibujo.
-6. **Mi Actividad + Chat grupal** (probar Supabase Realtime con `mensajes_chat`) + Mi Perfil.
-7. Recién después: Invitar Monitor, permisos granulares, reportes.
+3. **[Completado]** Preparar la Personalización (Base de datos) y su aplicación a Memorama y Solitario.
+4. **[Completado]** Implementar el motor de Solitario, Memorama y Ajedrez Multijugador en tiempo real.
+5. **Fase 2 de Personalización**: Subida de imágenes a Supabase Storage y guardado de dibujos en Canvas.
+6. **Mi Actividad + Chat grupal** (probar Supabase Realtime con `mensajes_chat`) + edición de Perfil.
+7. Recién después: Invitar Monitor con lectura/escritura real a la DB, gestión de permisos granulares.
 
-No implementes Ajedrez, Trivia, Damas chinas, Lotería ni "Combina
-Dulces" todavía — están fuera del alcance del v1 aunque existan
-wireframes.
+No implementes Trivia, Damas chinas, Lotería ni "Combina Dulces" todavía — están fuera del alcance del v1.
 
 ---
 
